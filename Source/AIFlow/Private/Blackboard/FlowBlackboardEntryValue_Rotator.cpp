@@ -5,6 +5,8 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIFlowLogChannels.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(FlowBlackboardEntryValue_Rotator)
+
 #if WITH_EDITOR
 void UFlowBlackboardEntryValue_Rotator::PostInitProperties()
 {
@@ -21,7 +23,7 @@ void UFlowBlackboardEntryValue_Rotator::PostInitProperties()
 
 FText UFlowBlackboardEntryValue_Rotator::BuildNodeConfigText() const
 {
-	return FText::FromString(FString::Printf(TEXT("Set %s to %s"), *Key.GetKeyName().ToString(), *GetEditorValueString()));
+	return FText::FromString(FString::Printf(TEXT("Set %s to \"%s\""), *Key.GetKeyName().ToString(), *GetEditorValueString()));
 }
 #endif // WITH_EDITOR
 

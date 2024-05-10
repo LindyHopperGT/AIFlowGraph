@@ -5,6 +5,8 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIFlowLogChannels.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(FlowBlackboardEntryValue_Object)
+
 #if WITH_EDITOR
 void UFlowBlackboardEntryValue_Object::PostInitProperties()
 {
@@ -62,7 +64,7 @@ FString UFlowBlackboardEntryValue_Object::GetEditorValueString() const
 
 FText UFlowBlackboardEntryValue_Object::BuildNodeConfigText() const
 {
-	return FText::FromString(FString::Printf(TEXT("Set %s to %s"), *Key.GetKeyName().ToString(), *GetEditorValueString()));
+	return FText::FromString(FString::Printf(TEXT("Set %s to \"%s\""), *Key.GetKeyName().ToString(), *GetEditorValueString()));
 }
 
 void UFlowBlackboardEntryValue_Object::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)

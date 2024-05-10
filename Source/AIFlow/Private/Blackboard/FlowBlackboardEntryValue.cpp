@@ -3,7 +3,7 @@
 #include "Blackboard/FlowBlackboardEntryValue.h"
 #include "BehaviorTree/Blackboard/BlackboardKeyType.h"
 
-// UFlowBlackboardEntryValue Implementation
+#include UE_INLINE_GENERATED_CPP_BY_NAME(FlowBlackboardEntryValue)
 
 UBlackboardData* UFlowBlackboardEntryValue::GetBlackboardAsset() const
 {
