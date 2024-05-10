@@ -1,0 +1,34 @@
+{
+	"FileVersion" : 3,
+	"Version" : 1.6,
+	"FriendlyName" : "AI Flow",
+	"Description" : "An extension to the Flow plugin which introduces AI utilities including Blackboard and EQS.",
+	"Category" : "Gameplay",
+	"CreatedByURL" : "https://github.com/MothCocoon/FlowGraph/graphs/contributors",
+	"DocsURL" : "https://github.com/MothCocoon/FlowGraph/wiki",
+	"MarketplaceURL" : "",
+	"SupportURL": "https://discord.gg/zMtMQ2vUUa",
+	"EnabledByDefault" : true,
+	"CanContainContent" : false,
+	"IsBetaVersion" : false,
+	"Installed" : false,
+	"Modules" :
+	[
+		{
+			"Name" : "AIFlow",
+			"Type" : "Runtime",
+			"LoadingPhase" : "PreDefault"
+		},
+		{
+			"Name" : "AIFlowEditor",
+			"Type" : "Editor",
+			"LoadingPhase" : "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "Flow",
+			"Enabled": true
+		},
+	]
+}
