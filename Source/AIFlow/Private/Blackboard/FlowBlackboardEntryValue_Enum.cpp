@@ -76,7 +76,11 @@ void UFlowBlackboardEntryValue_Enum::PostEditChangeProperty(FPropertyChangedEven
 
 	const FName MemberPropertyName = PropertyChangedEvent.MemberProperty->GetFName();
 
-	if (MemberPropertyName == GET_MEMBER_NAME_CHECKED(UFlowBlackboardEntryValue_Enum, EnumValue))
+	if (MemberPropertyName == GET_MEMBER_NAME_CHECKED(UFlowBlackboardEntryValue_Enum, Key))
+	{
+		(void) TryUpdateEnumTypesFromKey();
+	}
+	else if (MemberPropertyName == GET_MEMBER_NAME_CHECKED(UFlowBlackboardEntryValue_Enum, EnumValue))
 	{
 		if (ensure(Key.AllowedTypes.Num() == 1))
 		{
@@ -90,6 +94,49 @@ void UFlowBlackboardEntryValue_Enum::PostEditChangeProperty(FPropertyChangedEven
 	}
 
 	EnsureValueIsCompatibleWithEnumClass();
+}
+
+bool UFlowBlackboardEntryValue_Enum::TryUpdateEnumTypesFromKey()
+{
+	const UBlackboardData* BlackboardData = GetBlackboardAsset();
+	if (!IsValid(BlackboardData))
+	{
+		return false;
+	}
+
+	const FBlackboard::FKey KeyID = BlackboardData->GetKeyID(Key.GetKeyName());
+	if (KeyID == FBlackboard::InvalidKey)
+	{
+		return false;
+	}
+
+	const FBlackboardEntry* BlackboardEntry = BlackboardData->GetKey(KeyID);
+	if (!BlackboardEntry)
+	{
+		return false;
+	}
+
+	const UBlackboardKeyType_Enum* KeyTypeEnum = Cast<UBlackboardKeyType_Enum>(BlackboardEntry->KeyType);
+	if (!IsValid(KeyTypeEnum))
+	{
+		return false;
+	}
+
+	// Apply the UBlackboardKeyType_Enum values to EnumValue (FConfigurableEnumProperty)
+	if (KeyTypeEnum->bIsEnumNameValid)
+	{
+		EnumValue.EnumName = KeyTypeEnum->EnumName;
+	}
+	else
+	{
+		EnumValue.EnumName.Empty();
+	}
+
+	EnumValue.EnumClass = KeyTypeEnum->EnumType;
+
+	EnumValue.PostEditChangedEnumName();
+
+	return true;
 }
 
 void UFlowBlackboardEntryValue_Enum::EnsureValueIsCompatibleWithEnumClass()

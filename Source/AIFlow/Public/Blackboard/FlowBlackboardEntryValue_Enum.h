@@ -40,7 +40,9 @@ public:
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 	//~End UObject
 
+protected:
 	void EnsureValueIsCompatibleWithEnumClass();
+	bool TryUpdateEnumTypesFromKey();
 #endif // WITH_EDITOR
 
 protected:
