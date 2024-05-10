@@ -47,6 +47,6 @@ protected:
 
 protected:
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Configuration)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Configuration, meta = (DisplayAfter = Key))
 	FConfigurableEnumProperty EnumValue;
 };
