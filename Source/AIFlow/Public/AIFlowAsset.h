@@ -12,6 +12,7 @@
 // Forward Declarations
 class UBlackboardData;
 class UBlackboardComponent;
+class UFlowInjectComponentsManager;
 
 /**
  * Flow Asset subclass to add AI utility (specifically blackboard) capabilities
@@ -28,6 +29,7 @@ public:
 
 	//Begin UFlowAsset
 	virtual void InitializeInstance(const TWeakObjectPtr<UObject> InOwner, UFlowAsset* InTemplateAsset) override;
+	virtual void DeinitializeInstance() override;
 	//End UFlowAsset
 
 	//~Begin IFlowBlackboardInterface
@@ -40,8 +42,13 @@ public:
 
 protected:
 
-	virtual void EnsureBlackboardComponent();
+	virtual void CreateAndRegisterBlackboardComponent();
+	virtual void DestroyAndUnregisterBlackboardComponent();
 	virtual void SetKeySelfOnBlackboardComponent(UBlackboardComponent* BlackboardComp) const;
+
+	// Return the BlackboardData to use at runtime
+	// (subclasses may want to instance this class For Reasons)
+	virtual UBlackboardData* EnsureRuntimeBlackboardData() const { return BlackboardAsset; }
 
 protected:
 
@@ -52,4 +59,8 @@ protected:
 	// Cached blackboard component (on the owning actor)
 	UPROPERTY(Transient)
 	TWeakObjectPtr<UBlackboardComponent> BlackboardComponent = nullptr;
+
+	// Manager object to inject and remove blackboard components from the Flow owning Actor
+	UPROPERTY(Transient)
+	TObjectPtr<UFlowInjectComponentsManager> InjectComponentsManager = nullptr;
 };

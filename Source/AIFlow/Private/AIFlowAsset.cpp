@@ -6,6 +6,8 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/Pawn.h"
 #include "Misc/DataValidation.h"
+#include "Types/FlowInjectComponentsHelper.h"
+#include "Types/FlowInjectComponentsManager.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(AIFlowAsset)
 
@@ -22,10 +24,17 @@ void UAIFlowAsset::InitializeInstance(const TWeakObjectPtr<UObject> InOwner, UFl
 
 	if (UObject* FlowOwnerActor = TryFindActorOwner())
 	{
-		EnsureBlackboardComponent();
+		CreateAndRegisterBlackboardComponent();
 
 		SetKeySelfOnBlackboardComponent(BlackboardComponent.Get());
 	}
+}
+
+void UAIFlowAsset::DeinitializeInstance()
+{
+	DestroyAndUnregisterBlackboardComponent();
+
+	Super::DeinitializeInstance();
 }
 
 UBlackboardData* UAIFlowAsset::GetBlackboardAsset() const
@@ -38,7 +47,7 @@ UBlackboardComponent* UAIFlowAsset::GetBlackboardComponent() const
 	return BlackboardComponent.Get();
 }
 
-void UAIFlowAsset::EnsureBlackboardComponent()
+void UAIFlowAsset::CreateAndRegisterBlackboardComponent()
 {
 	if (!IsValid(BlackboardAsset))
 	{
@@ -55,27 +64,60 @@ void UAIFlowAsset::EnsureBlackboardComponent()
 	ActorOwner->GetComponents(BlackboardComponents);
 
 	// Find the desired blackboard component, if it already exists, on the ActorOwner
+	const UPackage* BlackboardAssetPackage = BlackboardAsset->GetPackage();
 	for (UBlackboardComponent* BlackboardComp : BlackboardComponents)
 	{
-		if (BlackboardComp->GetBlackboardAsset() == BlackboardAsset)
+		if (const UBlackboardData* BlackboardCompAsset = BlackboardComp->GetBlackboardAsset())
 		{
-			BlackboardComponent = BlackboardComp;
+			const UPackage* BlackboardCompAssetPackage = BlackboardCompAsset->GetPackage();
+		
+			if (BlackboardCompAssetPackage == BlackboardAssetPackage)
+			{
+				BlackboardComponent = BlackboardComp;
 
-			break;
+				break;
+			}
 		}
 	}
 
-	if (!BlackboardComponent.IsValid())
+	if (BlackboardComponent.IsValid())
 	{
-		// If the desired blackboard component does not already exist, add it to the ActorOwner
-		const FString BlackboardName = BlackboardAsset->GetName() + TEXT("_") + GetName();
-		UBlackboardComponent* NewBlackboardComponent = NewObject<UBlackboardComponent>(ActorOwner, FName(BlackboardName));
-		BlackboardComponent = NewBlackboardComponent;
+		// Blackboard component has already been setup 
+		// (presumably by some other flow graph, or it was built-in to the Actor)
 
-		NewBlackboardComponent->RegisterComponent();
-
-		NewBlackboardComponent->InitializeBlackboard(*BlackboardAsset);
+		return;
 	}
+
+	// If the desired blackboard component does not already exist, add it to the ActorOwner
+	UActorComponent* ComponentInstance = FFlowInjectComponentsHelper::TryCreateComponentInstanceForActorFromClass(*ActorOwner, UBlackboardComponent::StaticClass());
+	BlackboardComponent = CastChecked<UBlackboardComponent>(ComponentInstance);
+	// Create the manager object if we're injecting a component
+	InjectComponentsManager = NewObject<UFlowInjectComponentsManager>(this);
+	InjectComponentsManager->InitializeRuntime();
+
+	TArray<UActorComponent*> ComponentInstances;
+	ComponentInstances.Reserve(1);
+	ComponentInstances.Add(ComponentInstance);
+
+	// Inject the desired component
+	InjectComponentsManager->InjectComponentsOnActor(*ActorOwner, ComponentInstances);
+
+	// Ensure the Runtime BlackboardData is instanced (if subclasses need to instance it)
+	UBlackboardData* RuntimeBlackboard = EnsureRuntimeBlackboardData();
+
+	BlackboardComponent->InitializeBlackboard(*RuntimeBlackboard);
+}
+
+void UAIFlowAsset::DestroyAndUnregisterBlackboardComponent()
+{
+	if (IsValid(InjectComponentsManager))
+	{
+		InjectComponentsManager->ShutdownRuntime();
+	}
+
+	InjectComponentsManager = nullptr;
+
+	BlackboardComponent = nullptr;
 }
 
 void UAIFlowAsset::SetKeySelfOnBlackboardComponent(UBlackboardComponent* BlackboardComp) const
