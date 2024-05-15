@@ -5,7 +5,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BehaviorTree/Blackboard/BlackboardKeyType.h"
 
-// IFlowBlackboardInterface Implementation
+#include UE_INLINE_GENERATED_CPP_BY_NAME(FlowBlackboardInterface)
 
 bool IFlowBlackboardInterface::IsValidBlackboardKey(const FName& KeyName) const
 {
