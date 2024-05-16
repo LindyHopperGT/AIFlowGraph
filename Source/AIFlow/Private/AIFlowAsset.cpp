@@ -95,12 +95,8 @@ void UAIFlowAsset::CreateAndRegisterBlackboardComponent()
 	InjectComponentsManager = NewObject<UFlowInjectComponentsManager>(this);
 	InjectComponentsManager->InitializeRuntime();
 
-	TArray<UActorComponent*> ComponentInstances;
-	ComponentInstances.Reserve(1);
-	ComponentInstances.Add(ComponentInstance);
-
 	// Inject the desired component
-	InjectComponentsManager->InjectComponentsOnActor(*ActorOwner, ComponentInstances);
+	InjectComponentsManager->InjectComponentOnActor(*ActorOwner, *ComponentInstance);
 
 	// Ensure the Runtime BlackboardData is instanced (if subclasses need to instance it)
 	UBlackboardData* RuntimeBlackboard = EnsureRuntimeBlackboardData();
