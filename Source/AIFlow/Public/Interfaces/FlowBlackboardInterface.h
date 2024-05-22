@@ -10,6 +10,7 @@
 // Forward Declarations
 class UBlackboardKeyType;
 class UBlackboardComponent;
+class UBlackboardData;
 
 // Implemented by objects that can access a Flow Blackboard
 //  (eg, UAIFlowAsset, UAIFlowNode and UAIFlowNodeAddOn implement this)
@@ -41,6 +42,7 @@ public:
 
 	// Get the KeyType of a blackboard key
 	UFUNCTION(BlueprintCallable, Category = "FlowNode")
-	virtual TSubclassOf<UBlackboardKeyType> GetBlackboardKeyType(const FName& KeyName) const;
-	static TSubclassOf<UBlackboardKeyType> GetBlackboardKeyType(const UBlackboardComponent& BlackboardComponent, const FName& KeyName);
+	virtual UBlackboardKeyType* GetBlackboardKeyType(const FName& KeyName) const;
+	static UBlackboardKeyType* GetBlackboardKeyType(const UBlackboardComponent& BlackboardComponent, const FName& KeyName);
+	static UBlackboardKeyType* GetBlackboardKeyType(const UBlackboardData* BlackboardAsset, const FName& KeyName);
 };

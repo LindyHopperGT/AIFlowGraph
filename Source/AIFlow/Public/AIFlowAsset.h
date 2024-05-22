@@ -63,4 +63,9 @@ protected:
 	// Manager object to inject and remove blackboard components from the Flow owning Actor
 	UPROPERTY(Transient)
 	TObjectPtr<UFlowInjectComponentsManager> InjectComponentsManager = nullptr;
+
+public:
+
+	// Configurable Blackboard component class to use
+	static TSubclassOf<UBlackboardComponent> BlackboardComponentClass;
 };

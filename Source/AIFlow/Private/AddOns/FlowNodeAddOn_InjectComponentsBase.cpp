@@ -50,7 +50,7 @@ void UFlowNodeAddOn_InjectComponentsBase::OnBeforeActorRemoved(AActor* RemovedAc
 	}
 }
 
-void UFlowNodeAddOn_InjectComponentsBase::FinishedSpawningActor_Implementation(AActor* SpawnedActor)
+void UFlowNodeAddOn_InjectComponentsBase::FinishedSpawningActor_Implementation(AActor* SpawnedActor, UFlowNodeBase* SpawningFlowNodeBase)
 {
 	if (!IsValid(SpawnedActor))
 	{

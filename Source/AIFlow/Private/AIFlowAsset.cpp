@@ -11,6 +11,8 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(AIFlowAsset)
 
+TSubclassOf<UBlackboardComponent> UAIFlowAsset::BlackboardComponentClass = UBlackboardComponent::StaticClass();
+
 UAIFlowAsset::UAIFlowAsset(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
@@ -32,9 +34,10 @@ void UAIFlowAsset::InitializeInstance(const TWeakObjectPtr<UObject> InOwner, UFl
 
 void UAIFlowAsset::DeinitializeInstance()
 {
-	DestroyAndUnregisterBlackboardComponent();
-
 	Super::DeinitializeInstance();
+
+	// We want to keep the blackboard around until we have deinitialized everything else. 
+	DestroyAndUnregisterBlackboardComponent();
 }
 
 UBlackboardData* UAIFlowAsset::GetBlackboardAsset() const
@@ -89,7 +92,8 @@ void UAIFlowAsset::CreateAndRegisterBlackboardComponent()
 	}
 
 	// If the desired blackboard component does not already exist, add it to the ActorOwner
-	UActorComponent* ComponentInstance = FFlowInjectComponentsHelper::TryCreateComponentInstanceForActorFromClass(*ActorOwner, UBlackboardComponent::StaticClass());
+	const FName InstanceBaseName = FName(FString(TEXT("Comp_") + BlackboardAsset->GetName()));
+	UActorComponent* ComponentInstance = FFlowInjectComponentsHelper::TryCreateComponentInstanceForActorFromClass(*ActorOwner, BlackboardComponentClass, InstanceBaseName);
 	BlackboardComponent = CastChecked<UBlackboardComponent>(ComponentInstance);
 	// Create the manager object if we're injecting a component
 	InjectComponentsManager = NewObject<UFlowInjectComponentsManager>(this);

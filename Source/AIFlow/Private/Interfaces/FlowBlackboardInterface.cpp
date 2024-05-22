@@ -71,7 +71,7 @@ TArray<FName> IFlowBlackboardInterface::GatherAllBlackboardKeysOfType(const UBla
 	return MatchingKeys;
 }
 
-TSubclassOf<UBlackboardKeyType> IFlowBlackboardInterface::GetBlackboardKeyType(const FName& KeyName) const
+UBlackboardKeyType* IFlowBlackboardInterface::GetBlackboardKeyType(const FName& KeyName) const
 {
 	UBlackboardComponent* BlackboardComp = GetBlackboardComponent();
 	if (!IsValid(BlackboardComp))
@@ -82,10 +82,30 @@ TSubclassOf<UBlackboardKeyType> IFlowBlackboardInterface::GetBlackboardKeyType(c
 	return GetBlackboardKeyType(*BlackboardComp, KeyName);
 }
 
-TSubclassOf<UBlackboardKeyType> IFlowBlackboardInterface::GetBlackboardKeyType(const UBlackboardComponent& BlackboardComp, const FName& KeyName)
+UBlackboardKeyType* IFlowBlackboardInterface::GetBlackboardKeyType(const UBlackboardComponent& BlackboardComp, const FName& KeyName)
 {
-	const FBlackboard::FKey KeyId = BlackboardComp.GetKeyID(KeyName);
-	return BlackboardComp.GetKeyType(KeyId);
+	return GetBlackboardKeyType(BlackboardComp.GetBlackboardAsset(), KeyName);
+}
+
+UBlackboardKeyType* IFlowBlackboardInterface::GetBlackboardKeyType(const UBlackboardData* BlackboardAsset, const FName& KeyName)
+{
+	if (!BlackboardAsset)
+	{
+		return nullptr;
+	}
+
+	const FBlackboard::FKey KeyId = BlackboardAsset->GetKeyID(KeyName);
+
+	// Look for the key on all matching blackboards
+	for (const UBlackboardData* It = BlackboardAsset; It; It = It->Parent)
+	{
+		if (const FBlackboardEntry* BlackboardEntry = It->GetKey(KeyId))
+		{
+			return BlackboardEntry->KeyType;
+		}
+	}
+
+	return nullptr;
 }
 
 UBlackboardComponent* IFlowBlackboardInterface::GetBlackboardComponent() const

@@ -26,7 +26,7 @@ public:
 	UFlowNodeAddOn_InjectComponentsBase();
 
 	// IFlowPerSpawnedActorInterface
-	void FinishedSpawningActor_Implementation(AActor* SpawnedActor) override;
+	void FinishedSpawningActor_Implementation(AActor* SpawnedActor, UFlowNodeBase* SpawningFlowNodeBase) override;
 	// --
 
 	// IFlowCoreExecutableInterface
