@@ -23,7 +23,7 @@ public:
 
 	// SpawningFlowNodeBase is the Node or AddOn that did the spawning or is most relevant to the spawning;
 	// this is often (but not always) the FlowNode itself.
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "FlowNode")
 	void FinishedSpawningActor(AActor* SpawnedActor, UFlowNodeBase* SpawningNodeOrAddOn);
 	virtual void FinishedSpawningActor_Implementation(AActor* SpawnedActor, UFlowNodeBase* SpawningNodeOrAddOn) { }
 
