@@ -230,7 +230,7 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::TryGetBlackboardKeyInfo(
 	{
 		if (bWarnIfMissing)
 		{
-			LogErrorConst(
+			LogError(
 				FString::Printf(
 					TEXT("Invalid blackboard key %s in blackboard %s"),
 					*KeyName.ToString(),
@@ -244,7 +244,7 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::TryGetBlackboardKeyInfo(
 
 	if (!OutKeyTypeEntry)
 	{
-		LogErrorConst(FString::Printf(TEXT("Invalid blackboard key type for %s in blackboard %s!"), *KeyName.ToString(), *BlackboardData.GetName()));
+		LogError(FString::Printf(TEXT("Invalid blackboard key type for %s in blackboard %s!"), *KeyName.ToString(), *BlackboardData.GetName()));
 
 		return false;
 	}
@@ -257,7 +257,7 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::EvaluatePredicate_Implement
 	const UBlackboardComponent* BlackboardComponent = GetBlackboardComponent();
 	if (!IsValid(BlackboardComponent))
 	{
-		LogErrorConst(TEXT("Cannot EvaluatePredicate on a blackboard key without a Blackboard Component"));
+		LogError(TEXT("Cannot EvaluatePredicate on a blackboard key without a Blackboard Component"));
 
 		return false;
 	}
@@ -265,7 +265,7 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::EvaluatePredicate_Implement
 	const UBlackboardData* BlackboardData = BlackboardComponent->GetBlackboardAsset();
 	if (!IsValid(BlackboardData))
 	{
-		LogErrorConst(TEXT("Cannot EvaluatePredicate on a blackboard key without a Blackboard Asset"));
+		LogError(TEXT("Cannot EvaluatePredicate on a blackboard key without a Blackboard Asset"));
 
 		return false;
 	}
@@ -276,7 +276,7 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::EvaluatePredicate_Implement
 	FBlackboardEntry const* KeyLeftTypeEntry = nullptr;
 	if (!TryGetBlackboardKeyInfo(*BlackboardData, KeyLeft, KeyLeftID, KeyLeftTypeEntry, bWarnIfBlackboardKeysAreMissing))
 	{
-		LogErrorConst(TEXT("Cannot EvaluatePredicate on a blackboard key without a valid Key (left)"));
+		LogError(TEXT("Cannot EvaluatePredicate on a blackboard key without a valid Key (left)"));
 
 		return false;
 	}
@@ -297,7 +297,7 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::EvaluatePredicate_Implement
 		FBlackboardEntry const* KeyRightTypeEntry = nullptr;
 		if (!TryGetBlackboardKeyInfo(*BlackboardData, KeyRight, KeyRightID, KeyRightTypeEntry, bWarnIfBlackboardKeysAreMissing))
 		{
-			LogErrorConst(TEXT("Cannot EvaluatePredicate on a blackboard key without a valid Key (right)"));
+			LogError(TEXT("Cannot EvaluatePredicate on a blackboard key without a valid Key (right)"));
 
 			return false;
 		}
@@ -305,7 +305,7 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::EvaluatePredicate_Implement
 		const TSubclassOf<UBlackboardKeyType> KeyRightTypeClass = KeyLeftTypeEntry->KeyType->GetClass();
 		if (KeyLeftTypeClass != KeyRightTypeClass)
 		{
-			LogErrorConst(
+			LogError(
 				FString::Printf(
 					TEXT("Cannot EvaluatePredicate on a blackboard key with mismatched key types: left %s %s and right %s %s"),
 					*KeyLeft.GetKeyName().ToString(),
@@ -355,7 +355,7 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::ComputeCompareResultWithExp
 			// will always return false (as that is the default in UFlowBlackboardEntryValue), 
 			// so this check will prevent an arithmetic operation on types that do not support it.
 
-			LogErrorConst(
+			LogError(
 				FString::Printf(
 					TEXT("%s does not support arithmetic comparison operations"),
 					*RightExplicitValue.GetName()));
@@ -382,7 +382,7 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::ComputeCompareResultWithExp
 		return bArithmeticResult;
 	}
 
-	LogErrorConst(FString::Printf(TEXT("Incorrectly configured CompareBlackboardValues %s"), *GetName()));
+	LogError(FString::Printf(TEXT("Incorrectly configured CompareBlackboardValues %s"), *GetName()));
 
 	return false;
 }
@@ -432,7 +432,7 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::ComputeCompareResult(
 		}
 		else
 		{
-			LogErrorConst(
+			LogError(
 				FString::Printf(
 					TEXT("%s does not support arithmetic comparison operations"),
 					BlackboardKeyType ? *BlackboardKeyType->GetName() : TEXT("<null>")));
@@ -459,7 +459,7 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::ComputeCompareResult(
 		return bArithmeticResult;
 	}
 
-	LogErrorConst(FString::Printf(TEXT("Incorrectly configured CompareBlackboardValues %s"), *GetName()));
+	LogError(FString::Printf(TEXT("Incorrectly configured CompareBlackboardValues %s"), *GetName()));
 
 	return false;
 }
