@@ -19,11 +19,6 @@ struct FConfigurableEnumProperty
 
 public:
 
-#if WITH_EDITOR
-	// NOTE!  Must call this whenever EnumName property changes in editor to support C++ enums.
-	void PostEditChangedEnumName();
-#endif // WITH_EDITOR
-
 	// The selected enum Value
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Blackboard)
 	FName Value = NAME_None;
@@ -53,16 +48,3 @@ public:
 	UFUNCTION(BlueprintPure, meta = (DisplayName = "Convert to Enum", CompactNodeTitle = "->", BlueprintAutocast), Category = Blackboard)
 	static uint8 AutoConvert_ConfigurableEnumPropertyToEnum(const FConfigurableEnumProperty& ConfigurableEnumProperty);
 };
-
-UCLASS(hidedropdown)
-class UBlackboardKeyType_EnumFriendMaker : public UBlackboardKeyType_Enum
-{
-	GENERATED_BODY()
-
-	// Subclass only to give access to ValidateEnum() function to Outsiders
-public:
-#if WITH_EDITOR
-	static bool ValidateEnumForPublic(const UEnum& EnumType);
-#endif
-};
-

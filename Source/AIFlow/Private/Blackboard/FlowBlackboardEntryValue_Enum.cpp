@@ -50,8 +50,6 @@ bool UFlowBlackboardEntryValue_Enum::TryReconfigureFromBlackboardKeyType(const U
 			EnumValue.EnumName.Empty();
 		}
 
-		EnumValue.PostEditChangedEnumName();
-
 		EnsureValueIsCompatibleWithEnumClass();
 
 		return true;
@@ -89,8 +87,6 @@ void UFlowBlackboardEntryValue_Enum::PostEditChangeProperty(FPropertyChangedEven
 
 			EnumKeyType->EnumType = EnumValue.EnumClass;
 		}
-
-		EnumValue.PostEditChangedEnumName();
 	}
 
 	EnsureValueIsCompatibleWithEnumClass();
@@ -133,8 +129,6 @@ bool UFlowBlackboardEntryValue_Enum::TryUpdateEnumTypesFromKey()
 	}
 
 	EnumValue.EnumClass = KeyTypeEnum->EnumType;
-
-	EnumValue.PostEditChangedEnumName();
 
 	return true;
 }

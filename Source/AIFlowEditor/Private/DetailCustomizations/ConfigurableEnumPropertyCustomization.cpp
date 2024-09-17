@@ -2,6 +2,7 @@
 
 #include "ConfigurableEnumPropertyCustomization.h"
 #include "Types/ConfigurableEnumProperty.h"
+#include "Nodes/FlowPin.h"
 
 #include "IDetailChildrenBuilder.h"
 #include "UObject/UnrealType.h"
@@ -18,6 +19,8 @@ void FConfigurableEnumPropertyCustomization::CustomizeChildren(TSharedRef<IPrope
 	if (TSharedPtr<IPropertyHandle> EnumNameHandle = InStructPropertyHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FConfigurableEnumProperty, EnumName)))
 	{
 		StructBuilder.AddProperty(EnumNameHandle.ToSharedRef());
+
+		EnumNameHandle->SetOnPropertyValueChanged(FSimpleDelegate::CreateSP(this, &FConfigurableEnumPropertyCustomization::OnEnumNameChanged));
 	}
 }
 
@@ -87,6 +90,25 @@ bool FConfigurableEnumPropertyCustomization::TryGetCuratedName(FName& OutName) c
 	else
 	{
 		return false;
+	}
+}
+
+void FConfigurableEnumPropertyCustomization::OnEnumNameChanged()
+{
+	FConfigurableEnumProperty* ConfigurableEnumProperty = GetConfigurableEnumProperty();
+	if (!ConfigurableEnumProperty)
+	{
+		return;
+	}
+
+	if (!ConfigurableEnumProperty->EnumName.IsEmpty())
+	{
+		ConfigurableEnumProperty->EnumClass = UClass::TryFindTypeSlow<UEnum>(ConfigurableEnumProperty->EnumName, EFindFirstObjectOptions::ExactClass);
+
+		if (ConfigurableEnumProperty->EnumClass != nullptr && !FFlowPin::ValidateEnum(*ConfigurableEnumProperty->EnumClass))
+		{
+			ConfigurableEnumProperty->EnumClass = nullptr;
+		}
 	}
 }
 

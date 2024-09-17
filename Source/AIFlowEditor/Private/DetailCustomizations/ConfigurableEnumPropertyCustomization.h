@@ -6,6 +6,8 @@
 
 #include "Types/ConfigurableEnumProperty.h"
 
+// NOTE (gtaylor) this is nearly identical to FFlowDataPinOutputProperty_EnumCustomization, can we combine them?
+
 // Details customization for FConfigurableEnumProperty
 class FConfigurableEnumPropertyCustomization : public IFlowCuratedNamePropertyCustomization
 {
@@ -32,6 +34,8 @@ protected:
 	// Accessor to return the actual struct being edited
 	FORCEINLINE FConfigurableEnumProperty* GetConfigurableEnumProperty() const
 		{ return IFlowExtendedPropertyTypeCustomization::TryGetTypedStructValue<FConfigurableEnumProperty>(StructPropertyHandle); }
+	
+	void OnEnumNameChanged();
 
 	const UEnum* GetEnumClass() const;
 

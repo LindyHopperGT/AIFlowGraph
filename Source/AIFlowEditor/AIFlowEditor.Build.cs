@@ -11,6 +11,7 @@ public class AIFlowEditor : ModuleRules
 		PublicDependencyModuleNames.AddRange(new[]
 		{
 			"AIFlow",
+			"Flow",
 			"FlowEditor",
 		});
 
