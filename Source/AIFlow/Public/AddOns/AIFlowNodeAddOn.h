@@ -3,7 +3,7 @@
 #pragma once
 
 #include "AddOns/FlowNodeAddOn.h"
-#include "BehaviorTree/BlackboardAssetProvider.h"
+#include "Interfaces/FlowBlackboardAssetProvider.h"
 #include "Interfaces/FlowBlackboardInterface.h"
 
 #include "AIFlowNodeAddOn.generated.h"
@@ -11,18 +11,24 @@
 UCLASS(Abstract, EditInlineNew, Blueprintable)
 class AIFLOW_API UAIFlowNodeAddOn
 	: public UFlowNodeAddOn
-	, public IBlackboardAssetProvider
+	, public IFlowBlackboardAssetProvider
 	, public IFlowBlackboardInterface
 {
 	GENERATED_BODY()
 
 public:
 
-	//~Begin IFlowBlackboardInterface
+	// IFlowBlackboardInterface
 	virtual UBlackboardComponent* GetBlackboardComponent() const override;
-	//~End IFlowBlackboardInterface
+	// --
 
-	//~Begin IBlackboardAssetProvider
+	// IBlackboardAssetProvider
 	virtual UBlackboardData* GetBlackboardAsset() const override;
-	//~End IBlackboardAssetProvider
+	// --
+
+#if WITH_EDITOR
+	// IFlowBlackboardAssetProvider
+	virtual UBlackboardData* GetBlackboardAssetForPropertyHandle(const TSharedPtr<IPropertyHandle>& PropertyHandle) const override;
+	// --
+#endif // WITH_EDITOR
 };

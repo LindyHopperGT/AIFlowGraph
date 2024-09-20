@@ -1,9 +1,9 @@
 // Copyright https://github.com/MothCocoon/FlowGraph/graphs/contributors
 
 #include "FlowBlackboardEntryCustomization.h"
+#include "Interfaces/FlowBlackboardAssetProvider.h"
 #include "Types/FlowBlackboardEntry.h"
 
-#include "BehaviorTree/BlackboardAssetProvider.h"
 #include "BehaviorTree/BlackboardData.h"
 #include "BehaviorTree/Blackboard/BlackboardKeyType_Enum.h"
 #include "IDetailChildrenBuilder.h"
@@ -134,7 +134,7 @@ bool FFlowBlackboardEntryCustomization::TryGetCuratedName(FName& OutName) const
 	}
 }
 
-const IBlackboardAssetProvider* FFlowBlackboardEntryCustomization::TryGetBlackboardAssetProviderFromOuters() const
+const IFlowBlackboardAssetProvider* FFlowBlackboardEntryCustomization::TryGetBlackboardAssetProviderFromOuters() const
 {
 	check(StructPropertyHandle->IsValidHandle());
 
@@ -151,7 +151,7 @@ const IBlackboardAssetProvider* FFlowBlackboardEntryCustomization::TryGetBlackbo
 
 	while (IsValid(CurrentOuter))
 	{
-		const IBlackboardAssetProvider* FlowNodeOuter = Cast<IBlackboardAssetProvider>(CurrentOuter);
+		const IFlowBlackboardAssetProvider* FlowNodeOuter = Cast<IFlowBlackboardAssetProvider>(CurrentOuter);
 		if (FlowNodeOuter)
 		{
 			return FlowNodeOuter;
@@ -165,13 +165,13 @@ const IBlackboardAssetProvider* FFlowBlackboardEntryCustomization::TryGetBlackbo
 
 const UBlackboardData* FFlowBlackboardEntryCustomization::GetBlackboardData() const
 {
-	const IBlackboardAssetProvider* BlackboardProvider = TryGetBlackboardAssetProviderFromOuters();
-	if (!BlackboardProvider)
+	const IFlowBlackboardAssetProvider* FlowBlackboardProvider = TryGetBlackboardAssetProviderFromOuters();
+	if (!FlowBlackboardProvider)
 	{
 		return nullptr;
 	}
 
-	const UBlackboardData* BlackboardData = BlackboardProvider->GetBlackboardAsset();
+	const UBlackboardData* BlackboardData = FlowBlackboardProvider->GetBlackboardAssetForPropertyHandle(StructPropertyHandle);
 	if (!IsValid(BlackboardData))
 	{
 		return nullptr;

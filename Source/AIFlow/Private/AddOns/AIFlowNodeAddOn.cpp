@@ -7,8 +7,7 @@
 
 UBlackboardComponent* UAIFlowNodeAddOn::GetBlackboardComponent() const
 {
-	IFlowBlackboardInterface* FlowBlackboardInterface = Cast<IFlowBlackboardInterface>(GetFlowAsset());
-	if (FlowBlackboardInterface)
+	if (IFlowBlackboardInterface* FlowBlackboardInterface = Cast<IFlowBlackboardInterface>(GetFlowAsset()))
 	{
 		return FlowBlackboardInterface->GetBlackboardComponent();
 	}
@@ -16,14 +15,24 @@ UBlackboardComponent* UAIFlowNodeAddOn::GetBlackboardComponent() const
 	return nullptr;
 }
 
-
 UBlackboardData* UAIFlowNodeAddOn::GetBlackboardAsset() const
 {
-	const IBlackboardAssetProvider* BlackboardAssetProvider = Cast<IBlackboardAssetProvider>(GetFlowAsset());
-	if (BlackboardAssetProvider)
+	if (const IFlowBlackboardAssetProvider* BlackboardAssetProvider = Cast<IFlowBlackboardAssetProvider>(GetFlowAsset()))
 	{
 		return BlackboardAssetProvider->GetBlackboardAsset();
 	}
 
 	return nullptr;
 }
+
+#if WITH_EDITOR
+UBlackboardData* UAIFlowNodeAddOn::GetBlackboardAssetForPropertyHandle(const TSharedPtr<IPropertyHandle>& PropertyHandle) const
+{
+	if (const IFlowBlackboardAssetProvider* BlackboardAssetProvider = Cast<IFlowBlackboardAssetProvider>(GetFlowAsset()))
+	{
+		return BlackboardAssetProvider->GetBlackboardAssetForPropertyHandle(PropertyHandle);
+	}
+
+	return nullptr;
+}
+#endif // WITH_EDITOR

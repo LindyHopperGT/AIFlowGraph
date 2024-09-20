@@ -3,7 +3,7 @@
 #pragma once
 
 #include "BehaviorTree/Blackboard/BlackboardKeyEnums.h"
-#include "BehaviorTree/BlackboardAssetProvider.h"
+#include "Interfaces/FlowBlackboardAssetProvider.h"
 #include "Templates/SubclassOf.h"
 #include "UObject/Object.h"
 
@@ -30,13 +30,13 @@ enum class EFlowBlackboardEntryValueKeyVisibility : uint8
 UCLASS(Abstract, BlueprintType, EditInlineNew, DisplayName = "Blackboard Value")
 class AIFLOW_API UFlowBlackboardEntryValue
 	: public UObject
-	, public IBlackboardAssetProvider
+	, public IFlowBlackboardAssetProvider
 {
 	GENERATED_BODY()
 
 public:
 
-	//~Begin UFlowBlackboardEntryValue
+	// UFlowBlackboardEntryValue
 
 	// Uses the data in this UFlowBlackboardEntryValue to set the matching key's value on the given blackboard
 	virtual void SetOnBlackboardComponent(UBlackboardComponent* BlackboardComponent) const PURE_VIRTUAL(SetOnBlackboardComponent);
@@ -72,11 +72,17 @@ public:
 	// from the available subclasses.
 	static TSubclassOf<UFlowBlackboardEntryValue> GetFlowBlackboardEntryValueClassForKeyType(TSubclassOf<UBlackboardKeyType> KeyTypeClass);
 #endif // WITH_EDITOR
-	//~End UFlowBlackboardEntryValue
+	// --
 
-	//~Begin IBlackboardAssetProvider
+	// IBlackboardAssetProvider
 	virtual UBlackboardData* GetBlackboardAsset() const override;
-	//~End IBlackboardAssetProvider
+	// --
+
+#if WITH_EDITOR
+	// IFlowBlackboardAssetProvider
+	virtual UBlackboardData* GetBlackboardAssetForPropertyHandle(const TSharedPtr<IPropertyHandle>& PropertyHandle) const override;
+	// --
+#endif // WITH_EDITOR
 
 public:
 

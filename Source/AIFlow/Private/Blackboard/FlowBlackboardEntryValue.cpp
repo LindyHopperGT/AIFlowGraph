@@ -7,8 +7,7 @@
 
 UBlackboardData* UFlowBlackboardEntryValue::GetBlackboardAsset() const
 {
-	IBlackboardAssetProvider* OuterProvider = Cast<IBlackboardAssetProvider>(GetOuter());
-	if (OuterProvider)
+	if (IFlowBlackboardAssetProvider* OuterProvider = Cast<IFlowBlackboardAssetProvider>(GetOuter()))
 	{
 		return OuterProvider->GetBlackboardAsset();
 	}
@@ -17,6 +16,16 @@ UBlackboardData* UFlowBlackboardEntryValue::GetBlackboardAsset() const
 }
 
 #if WITH_EDITOR
+UBlackboardData* UFlowBlackboardEntryValue::GetBlackboardAssetForPropertyHandle(const TSharedPtr<IPropertyHandle>& PropertyHandle) const
+{
+	if (IFlowBlackboardAssetProvider* OuterProvider = Cast<IFlowBlackboardAssetProvider>(GetOuter()))
+	{
+		return OuterProvider->GetBlackboardAssetForPropertyHandle(PropertyHandle);
+	}
+
+	return nullptr;
+}
+
 bool UFlowBlackboardEntryValue::TryReconfigureFromBlackboardKeyType(const UBlackboardKeyType& KeyType)
 {
 	TSubclassOf<UBlackboardKeyType> SupportedKeyClass = GetSupportedBlackboardKeyType();

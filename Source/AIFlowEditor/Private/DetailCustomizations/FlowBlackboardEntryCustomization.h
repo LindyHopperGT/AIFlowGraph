@@ -7,7 +7,7 @@
 #include "Types/FlowBlackboardEntry.h"
 
 // Forward Declaration
-class IBlackboardAssetProvider;
+class IFlowBlackboardAssetProvider;
 class UBlackboardData;
 
 // Details customization for FFlowBlackboardEntry
@@ -21,22 +21,22 @@ public:
 
 protected:
 
-	//~Begin IPropertyTypeCustomization
+	// IPropertyTypeCustomization
 	virtual void CustomizeChildren(TSharedRef<IPropertyHandle> InStructPropertyHandle, IDetailChildrenBuilder& StructBuilder, IPropertyTypeCustomizationUtils& StructCustomizationUtils) override;
-	//~End IPropertyTypeCustomization
+	// --
 
-	//~Begin ICuratedNamePropertyCustomization
+	// ICuratedNamePropertyCustomization
 	virtual TSharedPtr<IPropertyHandle> GetCuratedNamePropertyHandle() const override;
 	virtual void SetCuratedName(const FName& NewName) override;
 	virtual bool TryGetCuratedName(FName& OutName) const override;
 	virtual TArray<FName> GetCuratedNameOptions() const override;
-	//~End ICuratedNamePropertyCustomization
+	// --
 
 	// Accessor to return the actual struct being edited
 	FORCEINLINE FFlowBlackboardEntry* GetFlowBlackboardEntry() const
 		{ return IFlowExtendedPropertyTypeCustomization::TryGetTypedStructValue<FFlowBlackboardEntry>(StructPropertyHandle); }
 
-	const IBlackboardAssetProvider* TryGetBlackboardAssetProviderFromOuters() const;
+	const IFlowBlackboardAssetProvider* TryGetBlackboardAssetProviderFromOuters() const;
 	const UBlackboardData* GetBlackboardData() const;
 
 	static TArray<FName> GetFlowBlackboardEntries(const UBlackboardData& BlackboardAsset, const FFlowBlackboardEntry& FlowBlackboardEntry);

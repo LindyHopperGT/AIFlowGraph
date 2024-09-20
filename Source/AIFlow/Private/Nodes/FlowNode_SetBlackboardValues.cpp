@@ -19,17 +19,18 @@ void UFlowNode_SetBlackboardValues::ExecuteInput(const FName& PinName)
 {
 	Super::ExecuteInput(PinName);
 
-	UBlackboardComponent* BlackboardComponent = GetBlackboardComponent();
-	if (IsValid(BlackboardComponent))
-	{
-		for (const UFlowBlackboardEntryValue* Entry : Entries)
+	const TArray<UBlackboardComponent*> BlackboardComponents = GetBlackboardComponentsToApplyTo();
+	if (!BlackboardComponents.IsEmpty())
+	{	for (UBlackboardComponent* BlackboardComponent : BlackboardComponents)
 		{
-			if (!IsValid(Entry))
+			if (IsValid(BlackboardComponent))
 			{
-				continue;
+				ActorBlackboardHelper.ApplyBlackboardOptionsToBlackboardComponent(
+					*BlackboardComponent,
+					PerActorOptionsAssignmentMethod,
+					EntriesForEveryActor,
+					PerActorOptions);
 			}
-
-			Entry->SetOnBlackboardComponent(BlackboardComponent);
 		}
 	}
 	else
@@ -41,20 +42,21 @@ void UFlowNode_SetBlackboardValues::ExecuteInput(const FName& PinName)
 	TriggerFirstOutput(bIsFinished);
 }
 
+TArray<UBlackboardComponent*> UFlowNode_SetBlackboardValues::GetBlackboardComponentsToApplyTo() const
+{
+	TArray<UBlackboardComponent*> BlackboardComponents;
+	BlackboardComponents.Reserve(1);
+	BlackboardComponents.Add(GetBlackboardComponent());
+
+	return BlackboardComponents;
+}
+
 void UFlowNode_SetBlackboardValues::UpdateNodeConfigText_Implementation()
 {
 #if WITH_EDITOR
-
 	FTextBuilder TextBuilder;
-	for (const UFlowBlackboardEntryValue* Entry : Entries)
-	{
-		if (!IsValid(Entry))
-		{
-			continue;
-		}
 
-		TextBuilder.AppendLine(Entry->BuildNodeConfigText());
-	}
+	FAIFlowActorBlackboardHelper::AppendBlackboardOptions(EntriesForEveryActor, PerActorOptions, TextBuilder);
 
 	SetNodeConfigText(TextBuilder.ToText());
 #endif // WITH_EDITOR

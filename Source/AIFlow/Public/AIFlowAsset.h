@@ -3,9 +3,8 @@
 #pragma once
 
 #include "FlowAsset.h"
+#include "Interfaces/FlowBlackboardAssetProvider.h"
 #include "Interfaces/FlowBlackboardInterface.h"
-
-#include "BehaviorTree/BlackboardAssetProvider.h"
 
 #include "AIFlowAsset.generated.h"
 
@@ -20,25 +19,27 @@ class UFlowInjectComponentsManager;
 UCLASS(BlueprintType, DisplayName = "AI Flow Asset")
 class AIFLOW_API UAIFlowAsset
 	: public UFlowAsset
-	, public IBlackboardAssetProvider
+	, public IFlowBlackboardAssetProvider
 	, public IFlowBlackboardInterface
 {
 	GENERATED_UCLASS_BODY()
 
 public:
 
-	//Begin UFlowAsset
+	// UFlowAsset
 	virtual void InitializeInstance(const TWeakObjectPtr<UObject> InOwner, UFlowAsset* InTemplateAsset) override;
 	virtual void DeinitializeInstance() override;
-	//End UFlowAsset
+	// --
 
-	//~Begin IFlowBlackboardInterface
+	// IFlowBlackboardInterface
 	virtual UBlackboardComponent* GetBlackboardComponent() const override;
-	//~End IFlowBlackboardInterface
+	// --
 
-	//~Begin IBlackboardAssetProvider
+	// IBlackboardAssetProvider
 	virtual UBlackboardData* GetBlackboardAsset() const override;
-	//~End IBlackboardAssetProvider
+	// --
+
+	static UBlackboardComponent* TryFindBlackboardComponentOnActor(AActor& Actor, UBlackboardData* OptionalBlackboardData);
 
 protected:
 

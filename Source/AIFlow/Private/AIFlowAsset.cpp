@@ -1,6 +1,7 @@
 // Copyright https://github.com/MothCocoon/FlowGraph/graphs/contributors
 
 #include "AIFlowAsset.h"
+#include "AIFlowLogChannels.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Controller.h"
@@ -50,6 +51,48 @@ UBlackboardComponent* UAIFlowAsset::GetBlackboardComponent() const
 	return BlackboardComponent.Get();
 }
 
+UBlackboardComponent* UAIFlowAsset::TryFindBlackboardComponentOnActor(AActor& Actor, UBlackboardData* OptionalBlackboardData)
+{
+	TArray<UBlackboardComponent*> BlackboardComponents;
+	Actor.GetComponents(BlackboardComponents);
+
+	if (IsValid(OptionalBlackboardData))
+	{
+		// Find the desired blackboard component, if it exists, on the ActorOwner
+		const UPackage* BlackboardAssetPackage = OptionalBlackboardData->GetPackage();
+		for (UBlackboardComponent* BlackboardComp : BlackboardComponents)
+		{
+			if (const UBlackboardData* BlackboardCompAsset = BlackboardComp->GetBlackboardAsset())
+			{
+				const UPackage* BlackboardCompAssetPackage = BlackboardCompAsset->GetPackage();
+
+				if (BlackboardCompAssetPackage == BlackboardAssetPackage)
+				{
+					return BlackboardComp;
+				}
+			}
+		}
+
+		return nullptr;
+	}
+	else if (BlackboardComponents.Num() > 0)
+	{
+		if (BlackboardComponents.Num() > 1)
+		{
+			UE_LOG(
+				LogAIFlow,
+				Error,
+				TEXT("UAIFlowAsset::TryFindBlackboardComponentOnActor found multiple blackboard components (%d) on actor %s, but no OptionalBlackboardData was specified to filter which is desired.  Returning the 0th, but this may not be the desired blackboard."),
+				BlackboardComponents.Num(),
+				*Actor.GetName());
+		}
+
+		return BlackboardComponents[0];
+	}
+
+	return nullptr;
+}
+
 void UAIFlowAsset::CreateAndRegisterBlackboardComponent()
 {
 	if (!IsValid(BlackboardAsset))
@@ -63,25 +106,7 @@ void UAIFlowAsset::CreateAndRegisterBlackboardComponent()
 		return;
 	}
 
-	TArray<UBlackboardComponent*> BlackboardComponents;
-	ActorOwner->GetComponents(BlackboardComponents);
-
-	// Find the desired blackboard component, if it already exists, on the ActorOwner
-	const UPackage* BlackboardAssetPackage = BlackboardAsset->GetPackage();
-	for (UBlackboardComponent* BlackboardComp : BlackboardComponents)
-	{
-		if (const UBlackboardData* BlackboardCompAsset = BlackboardComp->GetBlackboardAsset())
-		{
-			const UPackage* BlackboardCompAssetPackage = BlackboardCompAsset->GetPackage();
-		
-			if (BlackboardCompAssetPackage == BlackboardAssetPackage)
-			{
-				BlackboardComponent = BlackboardComp;
-
-				break;
-			}
-		}
-	}
+	BlackboardComponent = TryFindBlackboardComponentOnActor(*ActorOwner, BlackboardAsset);
 
 	if (BlackboardComponent.IsValid())
 	{
@@ -95,6 +120,7 @@ void UAIFlowAsset::CreateAndRegisterBlackboardComponent()
 	const FName InstanceBaseName = FName(FString(TEXT("Comp_") + BlackboardAsset->GetName()));
 	UActorComponent* ComponentInstance = FFlowInjectComponentsHelper::TryCreateComponentInstanceForActorFromClass(*ActorOwner, BlackboardComponentClass, InstanceBaseName);
 	BlackboardComponent = CastChecked<UBlackboardComponent>(ComponentInstance);
+
 	// Create the manager object if we're injecting a component
 	InjectComponentsManager = NewObject<UFlowInjectComponentsManager>(this);
 	InjectComponentsManager->InitializeRuntime();

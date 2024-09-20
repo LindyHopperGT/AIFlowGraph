@@ -7,14 +7,25 @@
 
 UBlackboardData* UAIFlowNode::GetBlackboardAsset() const
 {
-	const IBlackboardAssetProvider* BlackboardAssetProvider = Cast<IBlackboardAssetProvider>(GetFlowAsset());
-	if (BlackboardAssetProvider)
+	if (const IFlowBlackboardAssetProvider* BlackboardAssetProvider = Cast<IFlowBlackboardAssetProvider>(GetFlowAsset()))
 	{
 		return BlackboardAssetProvider->GetBlackboardAsset();
 	}
 
 	return nullptr;
 }
+
+#if WITH_EDITOR
+UBlackboardData* UAIFlowNode::GetBlackboardAssetForPropertyHandle(const TSharedPtr<IPropertyHandle>& PropertyHandle) const
+{
+	if (const IFlowBlackboardAssetProvider* BlackboardAssetProvider = Cast<IFlowBlackboardAssetProvider>(GetFlowAsset()))
+	{
+		return BlackboardAssetProvider->GetBlackboardAssetForPropertyHandle(PropertyHandle);
+	}
+
+	return nullptr;
+}
+#endif // WITH_EDITOR
 
 UBlackboardComponent* UAIFlowNode::GetBlackboardComponent() const
 {
