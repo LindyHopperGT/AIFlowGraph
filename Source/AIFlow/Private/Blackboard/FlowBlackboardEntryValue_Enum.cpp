@@ -4,6 +4,9 @@
 #include "BehaviorTree/Blackboard/BlackboardKeyType_Enum.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIFlowLogChannels.h"
+#include "Nodes/FlowNode.h"
+#include "Types/FlowDataPinProperties.h"
+#include "Types/FlowDataPinResults.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(FlowBlackboardEntryValue_Enum)
 
@@ -156,6 +159,20 @@ void UFlowBlackboardEntryValue_Enum::EnsureValueIsCompatibleWithEnumClass()
 
 #endif // WITH_EDITOR
 
+bool UFlowBlackboardEntryValue_Enum::TryProvideFlowDataPinProperty(const bool bIsInputPin, TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const
+{
+	if (bIsInputPin)
+	{
+		OutFlowDataPinProperty.InitializeAs<FFlowDataPinInputProperty_Enum>(EnumValue.Value, EnumValue.EnumClass);
+	}
+	else
+	{
+		OutFlowDataPinProperty.InitializeAs<FFlowDataPinOutputProperty_Enum>(EnumValue.Value, EnumValue.EnumClass);
+	}
+
+	return true;
+}
+
 void UFlowBlackboardEntryValue_Enum::SetOnBlackboardComponent(UBlackboardComponent* BlackboardComponent) const
 {
 	if (IsValid(BlackboardComponent))
@@ -218,4 +235,19 @@ bool UFlowBlackboardEntryValue_Enum::TryGetNumericalValuesForArithmeticOperation
 	}
 
 	return true;
+}
+
+bool UFlowBlackboardEntryValue_Enum::TrySetValueFromInputDataPin(const FName& PinName, UFlowNode& PinOwnerFlowNode)
+{
+	const FFlowDataPinResult_Enum FlowDataPinResult = PinOwnerFlowNode.TryResolveDataPinAsEnum(PinName);
+
+	if (FlowDataPinResult.Result == EFlowDataPinResolveResult::Success)
+	{
+		EnumValue.Value = FlowDataPinResult.Value;
+		EnumValue.EnumClass = FlowDataPinResult.EnumClass;
+
+		return true;
+	}
+
+	return false;
 }

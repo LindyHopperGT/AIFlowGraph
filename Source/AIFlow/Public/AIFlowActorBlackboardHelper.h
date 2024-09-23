@@ -118,7 +118,6 @@ public:
 #if WITH_EDITOR
 	// Helper function to append text for Flow Node/AddOn Configuration display
 	AIFLOW_API static void AppendBlackboardOptions(
-		const FAIFlowConfigureBlackboardOption& EntriesForEveryActor,
 		const TArray<FAIFlowConfigureBlackboardOption> PerActorOptions,
 		FTextBuilder& InOutTextBuilder);
 #endif // WITH_EDITOR

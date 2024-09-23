@@ -12,6 +12,7 @@ public class AIFlow : ModuleRules
 		{
 			"AIModule",
 			"Flow",
+			"StructUtils",
 		});
 
 		PrivateDependencyModuleNames.AddRange(new[]

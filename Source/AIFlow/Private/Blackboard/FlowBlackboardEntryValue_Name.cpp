@@ -4,6 +4,9 @@
 #include "BehaviorTree/Blackboard/BlackboardKeyType_Name.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIFlowLogChannels.h"
+#include "Nodes/FlowNode.h"
+#include "Types/FlowDataPinProperties.h"
+#include "Types/FlowDataPinResults.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(FlowBlackboardEntryValue_Name)
 
@@ -31,6 +34,34 @@ FText UFlowBlackboardEntryValue_Name::BuildNodeConfigText() const
 	return FText::FromString(FString::Printf(TEXT("Set %s to \"%s\""), *Key.GetKeyName().ToString(), *GetEditorValueString()));
 }
 #endif // WITH_EDITOR
+
+bool UFlowBlackboardEntryValue_Name::TryProvideFlowDataPinProperty(const bool bIsInputPin, TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const
+{
+	if (bIsInputPin)
+	{
+		OutFlowDataPinProperty.InitializeAs<FFlowDataPinInputProperty_Name>(NameValue);
+	}
+	else
+	{
+		OutFlowDataPinProperty.InitializeAs<FFlowDataPinOutputProperty_Name>(NameValue);
+	}
+
+	return true;
+}
+
+bool UFlowBlackboardEntryValue_Name::TrySetValueFromInputDataPin(const FName& PinName, UFlowNode& PinOwnerFlowNode)
+{
+	const FFlowDataPinResult_Name FlowDataPinResult = PinOwnerFlowNode.TryResolveDataPinAsName(PinName);
+
+	if (FlowDataPinResult.Result == EFlowDataPinResolveResult::Success)
+	{
+		NameValue = FlowDataPinResult.Value;
+
+		return true;
+	}
+
+	return false;
+}
 
 void UFlowBlackboardEntryValue_Name::SetOnBlackboardComponent(UBlackboardComponent* BlackboardComponent) const
 {

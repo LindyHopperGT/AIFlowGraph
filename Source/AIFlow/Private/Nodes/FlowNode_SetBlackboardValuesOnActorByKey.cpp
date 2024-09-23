@@ -25,7 +25,9 @@ void UFlowNode_SetBlackboardValuesOnActorByKey::UpdateNodeConfigText_Implementat
 		TextBuilder.AppendLine(FString::Printf(TEXT("Actor Key: %s"), *BlackboardActorKey.KeyName.ToString()));
 	}
 
-	FAIFlowActorBlackboardHelper::AppendBlackboardOptions(EntriesForEveryActor, PerActorOptions, TextBuilder);
+	AppendEntriesForEveryActor(TextBuilder);
+
+	FAIFlowActorBlackboardHelper::AppendBlackboardOptions(PerActorOptions, TextBuilder);
 
 	SetNodeConfigText(TextBuilder.ToText());
 #endif // WITH_EDITOR

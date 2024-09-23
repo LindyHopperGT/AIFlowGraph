@@ -21,6 +21,7 @@ public:
 	virtual void SetOnBlackboardComponent(UBlackboardComponent* BlackboardComponent) const override;
 	virtual EBlackboardCompare::Type CompareKeyValues(const UBlackboardComponent* BlackboardComponent, const FName& OtherKeyName) const override;
 	virtual TSubclassOf<UBlackboardKeyType> GetSupportedBlackboardKeyType() const override;
+	virtual bool TrySetValueFromInputDataPin(const FName& PinName, UFlowNode& PinOwnerFlowNode) override;
 	virtual bool TryGetNumericalValuesForArithmeticOperation(int32* OutIntValue, float* OutFloatValue) const override;
 #if WITH_EDITOR
 	virtual bool SupportsArithmeticOperations() const override { return true; }
@@ -28,6 +29,10 @@ public:
 	virtual FString GetEditorValueString() const override;
 #endif // WITH_EDITOR
 	//~End UFlowBlackboardEntryValue
+	
+	// IFlowDataPinPropertyProviderInterface
+	virtual bool TryProvideFlowDataPinProperty(const bool bIsInputPin, TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const override;
+	// --
 
 #if WITH_EDITOR
 public:

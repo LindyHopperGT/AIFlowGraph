@@ -4,6 +4,7 @@
 #include "BehaviorTree/Blackboard/BlackboardKeyType_Class.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIFlowLogChannels.h"
+#include "Types/FlowPinEnums.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(FlowBlackboardEntryValue_Class)
 
@@ -91,6 +92,21 @@ void UFlowBlackboardEntryValue_Class::EnsureClassInstanceIsCompatibleWithBaseCla
 }
 
 #endif // WITH_EDITOR
+
+bool UFlowBlackboardEntryValue_Class::TryProvideFlowDataPinProperty(const bool bIsInputPin, TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const
+{
+	// TODO (gtaylor) Implement Class data pin support
+	FLOW_ASSERT_ENUM_MAX(EFlowPinType, 13);
+
+	return false;
+}
+
+bool UFlowBlackboardEntryValue_Class::TrySetValueFromInputDataPin(const FName& PinName, UFlowNode& PinOwnerFlowNode)
+{
+	// TODO (gtaylor) Implement Class data pin support
+
+	return false;
+}
 
 void UFlowBlackboardEntryValue_Class::SetOnBlackboardComponent(UBlackboardComponent* BlackboardComponent) const
 {

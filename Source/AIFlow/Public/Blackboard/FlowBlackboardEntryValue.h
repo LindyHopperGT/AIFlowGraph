@@ -3,6 +3,7 @@
 #pragma once
 
 #include "BehaviorTree/Blackboard/BlackboardKeyEnums.h"
+#include "Interfaces/FlowDataPinPropertyProviderInterface.h"
 #include "Interfaces/FlowBlackboardAssetProvider.h"
 #include "Templates/SubclassOf.h"
 #include "UObject/Object.h"
@@ -15,6 +16,8 @@
 class UBlackboardKeyType;
 class UBlackboardComponent;
 class UFlowBlackboardEntryValue;
+class UFlowNode;
+struct FFlowDataPinProperty;
 
 // Enum to control visibility of the UFlowBlackboardEntryValue's Key in EditCondition
 UENUM()
@@ -31,6 +34,7 @@ UCLASS(Abstract, BlueprintType, EditInlineNew, DisplayName = "Blackboard Value")
 class AIFLOW_API UFlowBlackboardEntryValue
 	: public UObject
 	, public IFlowBlackboardAssetProvider
+	, public IFlowDataPinPropertyProviderInterface
 {
 	GENERATED_BODY()
 
@@ -51,6 +55,9 @@ public:
 	// Worker function for arithmetic compare operations (of the form EArithmeticCompare) that are done on blackboard entries.
 	// Only subclasses that SupportArithmeticOperations need to implement this function.
 	virtual bool TryGetNumericalValuesForArithmeticOperation(int32 * OutIntValue = nullptr, float* OutFloatValue = nullptr) const { return false; }
+
+	// Set this UFlowBlackboardEntryValue's value to the value from a Data Pin, resolved by PinOwnerFlowNode
+	virtual bool TrySetValueFromInputDataPin(const FName& PinName, UFlowNode& PinOwnerFlowNode) PURE_VIRTUAL(TrySetValueFromInputDataPin, return false;);
 
 #if WITH_EDITOR
 	// Does this class support arithmetic compare operations (of the form EArithmeticCompare) and 
@@ -83,6 +90,10 @@ public:
 	virtual UBlackboardData* GetBlackboardAssetForPropertyHandle(const TSharedPtr<IPropertyHandle>& PropertyHandle) const override;
 	// --
 #endif // WITH_EDITOR
+
+	// IFlowDataPinPropertyProviderInterface
+	virtual bool TryProvideFlowDataPinProperty(const bool bIsInputPin, TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const { return false; }
+	// --
 
 public:
 

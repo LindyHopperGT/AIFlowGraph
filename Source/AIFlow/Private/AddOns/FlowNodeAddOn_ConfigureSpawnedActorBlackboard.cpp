@@ -2,6 +2,7 @@
 
 #include "AddOns/FlowNodeAddOn_ConfigureSpawnedActorBlackboard.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Blackboard/FlowBlackboardEntryValue.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(FlowNodeAddOn_ConfigureSpawnedActorBlackboard)
 
@@ -50,7 +51,15 @@ void UFlowNodeAddOn_ConfigureSpawnedActorBlackboard::UpdateNodeConfigText_Implem
 #if WITH_EDITOR
 	FTextBuilder TextBuilder;
 
-	FAIFlowActorBlackboardHelper::AppendBlackboardOptions(EntriesForEveryActor, PerActorOptions, TextBuilder);
+	for (const UFlowBlackboardEntryValue* Entry : EntriesForEveryActor.Entries)
+	{
+		if (IsValid(Entry))
+		{
+			TextBuilder.AppendLine(Entry->BuildNodeConfigText());
+		}
+	}
+
+	FAIFlowActorBlackboardHelper::AppendBlackboardOptions(PerActorOptions, TextBuilder);
 
 	SetNodeConfigText(TextBuilder.ToText());
 #endif // WITH_EDITOR

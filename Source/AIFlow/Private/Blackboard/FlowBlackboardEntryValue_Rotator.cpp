@@ -4,6 +4,7 @@
 #include "BehaviorTree/Blackboard/BlackboardKeyType_Rotator.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIFlowLogChannels.h"
+#include "Types/FlowPinEnums.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(FlowBlackboardEntryValue_Rotator)
 
@@ -26,6 +27,22 @@ FText UFlowBlackboardEntryValue_Rotator::BuildNodeConfigText() const
 	return FText::FromString(FString::Printf(TEXT("Set %s to \"%s\""), *Key.GetKeyName().ToString(), *GetEditorValueString()));
 }
 #endif // WITH_EDITOR
+
+bool UFlowBlackboardEntryValue_Rotator::TryProvideFlowDataPinProperty(const bool bIsInputPin, TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const
+{
+	// TODO (gtaylor) Implement Rotator data pin support?
+	FLOW_ASSERT_ENUM_MAX(EFlowPinType, 13);
+
+	return false;
+}
+
+
+bool UFlowBlackboardEntryValue_Rotator::TrySetValueFromInputDataPin(const FName& PinName, UFlowNode& PinOwnerFlowNode)
+{
+	// TODO (gtaylor) Implement Rotator data pin support?
+
+	return false;
+}
 
 void UFlowBlackboardEntryValue_Rotator::SetOnBlackboardComponent(UBlackboardComponent* BlackboardComponent) const
 {

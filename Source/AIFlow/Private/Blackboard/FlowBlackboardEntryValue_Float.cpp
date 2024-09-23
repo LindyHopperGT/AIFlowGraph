@@ -4,6 +4,9 @@
 #include "BehaviorTree/Blackboard/BlackboardKeyType_Float.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIFlowLogChannels.h"
+#include "Nodes/FlowNode.h"
+#include "Types/FlowDataPinProperties.h"
+#include "Types/FlowDataPinResults.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(FlowBlackboardEntryValue_Float)
 
@@ -31,6 +34,34 @@ FText UFlowBlackboardEntryValue_Float::BuildNodeConfigText() const
 	return FText::FromString(FString::Printf(TEXT("Set %s to \"%f\""), *Key.GetKeyName().ToString(), FloatValue));
 }
 #endif // WITH_EDITOR
+
+bool UFlowBlackboardEntryValue_Float::TryProvideFlowDataPinProperty(const bool bIsInputPin, TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const
+{
+	if (bIsInputPin)
+	{
+		OutFlowDataPinProperty.InitializeAs<FFlowDataPinInputProperty_Float>(FloatValue);
+	}
+	else
+	{
+		OutFlowDataPinProperty.InitializeAs<FFlowDataPinOutputProperty_Float>(FloatValue);
+	}
+
+	return true;
+}
+
+bool UFlowBlackboardEntryValue_Float::TrySetValueFromInputDataPin(const FName& PinName, UFlowNode& PinOwnerFlowNode)
+{
+	const FFlowDataPinResult_Float FlowDataPinResult = PinOwnerFlowNode.TryResolveDataPinAsFloat(PinName);
+
+	if (FlowDataPinResult.Result == EFlowDataPinResolveResult::Success)
+	{
+		FloatValue = static_cast<float>(FlowDataPinResult.Value);
+
+		return true;
+	}
+
+	return false;
+}
 
 void UFlowBlackboardEntryValue_Float::SetOnBlackboardComponent(UBlackboardComponent* BlackboardComponent) const
 {

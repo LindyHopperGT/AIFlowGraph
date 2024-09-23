@@ -232,18 +232,9 @@ void FAIFlowActorBlackboardHelper::EnsureOrderedOptionIndices(int32 OptionNum)
 
 #if WITH_EDITOR
 void FAIFlowActorBlackboardHelper::AppendBlackboardOptions(
-	const FAIFlowConfigureBlackboardOption& EntriesForEveryActor,
 	const TArray<FAIFlowConfigureBlackboardOption> PerActorOptions,
 	FTextBuilder& InOutTextBuilder)
 {
-	for (const UFlowBlackboardEntryValue* Entry : EntriesForEveryActor.Entries)
-	{
-		if (IsValid(Entry))
-		{
-			InOutTextBuilder.AppendLine(Entry->BuildNodeConfigText());
-		}
-	}
-
 	for (int32 Index = 0; Index < PerActorOptions.Num(); ++Index)
 	{
 		const FAIFlowConfigureBlackboardOption& Option = PerActorOptions[Index];
