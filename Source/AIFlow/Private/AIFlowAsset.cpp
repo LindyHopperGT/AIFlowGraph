@@ -12,11 +12,10 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(AIFlowAsset)
 
-TSubclassOf<UBlackboardComponent> UAIFlowAsset::BlackboardComponentClass = UBlackboardComponent::StaticClass();
-
 UAIFlowAsset::UAIFlowAsset(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
+	BlackboardComponentClass = UBlackboardComponent::StaticClass();
 }
 
 void UAIFlowAsset::InitializeInstance(const TWeakObjectPtr<UObject> InOwner, UFlowAsset* InTemplateAsset)

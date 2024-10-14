@@ -65,8 +65,7 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UFlowInjectComponentsManager> InjectComponentsManager = nullptr;
 
-public:
-
-	// Configurable Blackboard component class to use
-	static TSubclassOf<UBlackboardComponent> BlackboardComponentClass;
+	// Subclass-configurable Blackboard component class to use
+	UPROPERTY(Transient)
+	TSubclassOf<UBlackboardComponent> BlackboardComponentClass;
 };
