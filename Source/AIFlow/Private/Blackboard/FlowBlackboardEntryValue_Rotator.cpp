@@ -4,7 +4,9 @@
 #include "BehaviorTree/Blackboard/BlackboardKeyType_Rotator.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIFlowLogChannels.h"
-#include "Types/FlowPinEnums.h"
+#include "Nodes/FlowNode.h"
+#include "Types/FlowDataPinProperties.h"
+#include "Types/FlowDataPinResults.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(FlowBlackboardEntryValue_Rotator)
 
@@ -30,16 +32,28 @@ FText UFlowBlackboardEntryValue_Rotator::BuildNodeConfigText() const
 
 bool UFlowBlackboardEntryValue_Rotator::TryProvideFlowDataPinProperty(const bool bIsInputPin, TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const
 {
-	// TODO (gtaylor) Implement Rotator data pin support?
-	FLOW_ASSERT_ENUM_MAX(EFlowPinType, 13);
+	if (bIsInputPin)
+	{
+		OutFlowDataPinProperty.InitializeAs<FFlowDataPinInputProperty_Rotator>(RotatorValue);
+	}
+	else
+	{
+		OutFlowDataPinProperty.InitializeAs<FFlowDataPinInputProperty_Rotator>(RotatorValue);
+	}
 
 	return false;
 }
 
-
 bool UFlowBlackboardEntryValue_Rotator::TrySetValueFromInputDataPin(const FName& PinName, UFlowNode& PinOwnerFlowNode)
 {
-	// TODO (gtaylor) Implement Rotator data pin support?
+	const FFlowDataPinResult_Rotator FlowDataPinResult = PinOwnerFlowNode.TryResolveDataPinAsRotator(PinName);
+
+	if (FlowDataPinResult.Result == EFlowDataPinResolveResult::Success)
+	{
+		RotatorValue = FlowDataPinResult.Value;
+
+		return true;
+	}
 
 	return false;
 }

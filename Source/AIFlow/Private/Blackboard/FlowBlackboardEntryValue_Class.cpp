@@ -4,7 +4,9 @@
 #include "BehaviorTree/Blackboard/BlackboardKeyType_Class.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIFlowLogChannels.h"
-#include "Types/FlowPinEnums.h"
+#include "Nodes/FlowNode.h"
+#include "Types/FlowDataPinProperties.h"
+#include "Types/FlowDataPinResults.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(FlowBlackboardEntryValue_Class)
 
@@ -95,15 +97,38 @@ void UFlowBlackboardEntryValue_Class::EnsureClassInstanceIsCompatibleWithBaseCla
 
 bool UFlowBlackboardEntryValue_Class::TryProvideFlowDataPinProperty(const bool bIsInputPin, TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const
 {
-	// TODO (gtaylor) Implement Class data pin support
-	FLOW_ASSERT_ENUM_MAX(EFlowPinType, 13);
+	FSoftClassPath ClassInstancePath = FSoftClassPath(ClassInstance);
 
-	return false;
+	UClass* ClassFilter = nullptr;
+
+#if WITH_EDITOR
+	// Only the editor data has the BaseClass (and also FFlowDataPinOutputProperty_Object::ClassFilter)
+	// so we only can supply (or use) that information in editor builds
+	ClassFilter = BaseClass;
+#endif // WITH_EDITOR
+
+	if (bIsInputPin)
+	{
+		OutFlowDataPinProperty.InitializeAs<FFlowDataPinInputProperty_Class>(ClassInstancePath, ClassFilter);
+	}
+	else
+	{
+		OutFlowDataPinProperty.InitializeAs<FFlowDataPinOutputProperty_Class>(ClassInstancePath, ClassFilter);
+	}
+
+	return true;
 }
 
 bool UFlowBlackboardEntryValue_Class::TrySetValueFromInputDataPin(const FName& PinName, UFlowNode& PinOwnerFlowNode)
 {
-	// TODO (gtaylor) Implement Class data pin support
+	const FFlowDataPinResult_Class FlowDataPinResult = PinOwnerFlowNode.TryResolveDataPinAsClass(PinName);
+
+	if (FlowDataPinResult.Result == EFlowDataPinResolveResult::Success)
+	{
+		ClassInstance = FlowDataPinResult.GetOrResolveClass();
+
+		return true;
+	}
 
 	return false;
 }

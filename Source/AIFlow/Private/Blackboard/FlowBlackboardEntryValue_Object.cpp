@@ -4,7 +4,9 @@
 #include "BehaviorTree/Blackboard/BlackboardKeyType_Object.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIFlowLogChannels.h"
+#include "Nodes/FlowNode.h"
 #include "Types/FlowDataPinProperties.h"
+#include "Types/FlowDataPinResults.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(FlowBlackboardEntryValue_Object)
 
@@ -128,15 +130,68 @@ void UFlowBlackboardEntryValue_Object::RefreshObjectTypeFromBaseClass()
 
 bool UFlowBlackboardEntryValue_Object::TryProvideFlowDataPinProperty(const bool bIsInputPin, TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const
 {
-	// TODO (gtaylor) Implement Object data pin support
-	FLOW_ASSERT_ENUM_MAX(EFlowPinType, 13);
+	UObject* ObjectValue = GetObjectValue();
 
-	return false;
+	UClass* ClassFilter = nullptr;
+
+#if WITH_EDITOR
+	// Only the editor data has the BaseClass (and also FFlowDataPinOutputProperty_Object::ClassFilter)
+	// so we only can supply (or use) that information in editor builds
+	ClassFilter = BaseClass;
+#endif // WITH_EDITOR
+
+	if (bIsInputPin)
+	{
+		OutFlowDataPinProperty.InitializeAs<FFlowDataPinInputProperty_Object>(ObjectValue, ClassFilter);
+	}
+	else
+	{
+		OutFlowDataPinProperty.InitializeAs<FFlowDataPinOutputProperty_Object>(ObjectValue, ClassFilter);
+	}
+
+	return true;
+}
+
+UObject* UFlowBlackboardEntryValue_Object::GetObjectValue() const
+{
+	return ObjectAsset ? ObjectAsset : ObjectInstance;
+}
+
+void UFlowBlackboardEntryValue_Object::SetObjectValue(UObject* InValue)
+{
+	UClass* ObjectClass = IsValid(InValue) ? InValue->GetClass() : nullptr;
+	if (IsValid(ObjectClass))
+	{
+		const bool bIsInstanced = (ObjectClass->ClassFlags & CLASS_EditInlineNew) != 0;
+
+		if (bIsInstanced)
+		{
+			ObjectInstance = InValue;
+			ObjectAsset = nullptr;
+		}
+		else
+		{
+			ObjectInstance = nullptr;
+			ObjectAsset = InValue;
+		}
+	}
+	else
+	{
+		ObjectInstance = nullptr;
+		ObjectAsset = nullptr;
+	}
 }
 
 bool UFlowBlackboardEntryValue_Object::TrySetValueFromInputDataPin(const FName& PinName, UFlowNode& PinOwnerFlowNode)
 {
-	// TODO (gtaylor) Implement Object data pin support
+	const FFlowDataPinResult_Object FlowDataPinResult = PinOwnerFlowNode.TryResolveDataPinAsObject(PinName);
+
+	if (FlowDataPinResult.Result == EFlowDataPinResolveResult::Success)
+	{
+		SetObjectValue(FlowDataPinResult.Value);
+
+		return true;
+	}
 
 	return false;
 }

@@ -40,6 +40,9 @@ public:
 	virtual bool TryProvideFlowDataPinProperty(const bool bIsInputPin, TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const override;
 	// --
 
+	UObject* GetObjectValue() const;
+	void SetObjectValue(UObject* InValue);
+
 #if WITH_EDITOR
 public:
 	//~Begin UFlowNodeBase
