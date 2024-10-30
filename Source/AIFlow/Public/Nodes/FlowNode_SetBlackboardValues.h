@@ -37,7 +37,7 @@ public:
 public:
 
 	// IFlowContextPinSupplierInterface
-	virtual bool SupportsContextPins() const override { return !EntriesForEveryActor.Entries.IsEmpty(); }
+	virtual bool SupportsContextPins() const override { return Super::SupportsContextPins() || !EntriesForEveryActor.Entries.IsEmpty(); }
 	// --
 
 	// UObject
