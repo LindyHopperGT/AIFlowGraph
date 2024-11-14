@@ -10,7 +10,7 @@ UFlowNodeAddOn_ConfigureSpawnedActorBlackboard::UFlowNodeAddOn_ConfigureSpawnedA
 	: Super()
 {
 #if WITH_EDITOR
-	NodeStyle = EFlowNodeStyle::Default;
+	NodeDisplayStyle = TAG_Flow_NodeDisplayStyle_AddOn_PerSpawnedActor;
 	Category = TEXT("Per-Spawned Actor");
 #endif
 }

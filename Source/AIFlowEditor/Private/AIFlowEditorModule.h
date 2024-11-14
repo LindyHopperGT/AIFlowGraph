@@ -22,6 +22,8 @@ public:
 	virtual void ShutdownModule() override;
 
 private:
+	void TrySetFlowNodeDisplayStyleDefaults() const;
+
 	void RegisterAssets();
 	void UnregisterAssets();
 

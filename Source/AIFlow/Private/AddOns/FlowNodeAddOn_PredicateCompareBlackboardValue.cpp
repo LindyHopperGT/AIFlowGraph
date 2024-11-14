@@ -22,7 +22,7 @@ UFlowNodeAddOn_PredicateCompareBlackboardValue::UFlowNodeAddOn_PredicateCompareB
 	: Super()
 {
 #if WITH_EDITOR
-	NodeStyle = EFlowNodeStyle::Logic;
+	NodeDisplayStyle = TAG_Flow_NodeDisplayStyle_AddOn_Predicate;
 	Category = TEXT("Blackboard");
 #endif
 }

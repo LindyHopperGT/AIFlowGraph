@@ -20,6 +20,7 @@ public class AIFlow : ModuleRules
 			"Core",
 			"CoreUObject",
 			"Engine",
+			"GameplayTags",
 		});
 	}
 }

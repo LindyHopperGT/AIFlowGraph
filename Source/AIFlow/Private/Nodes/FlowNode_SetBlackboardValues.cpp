@@ -3,6 +3,7 @@
 #include "Nodes/FlowNode_SetBlackboardValues.h"
 #include "Blackboard/FlowBlackboardEntryValue.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "AIFlowTags.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(FlowNode_SetBlackboardValues)
 
@@ -10,7 +11,7 @@ UFlowNode_SetBlackboardValues::UFlowNode_SetBlackboardValues()
 	: Super()
 {
 #if WITH_EDITOR
-	NodeStyle = EFlowNodeStyle::Default;
+	NodeDisplayStyle = TAG_Flow_NodeDisplayStyle_Node_Blackboard;
 	Category = TEXT("Blackboard");
 #endif
 }

@@ -5,8 +5,10 @@
 #include "Asset/AssetTypeActions_AIFlowAsset.h"
 #include "DetailCustomizations/FlowBlackboardEntryCustomization.h"
 #include "DetailCustomizations/ConfigurableEnumPropertyCustomization.h"
+#include "AIFlowTags.h"
 #include "Graph/FlowGraphSettings.h"
 
+#include "FlowModule.h"
 #include "AssetToolsModule.h"
 #include "Modules/ModuleManager.h"
 #include "PropertyEditorModule.h"
@@ -17,6 +19,8 @@ EAssetTypeCategories::Type FAIFlowEditorModule::FlowAssetCategory = static_cast<
 
 void FAIFlowEditorModule::StartupModule()
 {
+	TrySetFlowNodeDisplayStyleDefaults();
+
 	RegisterAssets();
 
 	RegisterDetailCustomizations();
@@ -27,6 +31,15 @@ void FAIFlowEditorModule::ShutdownModule()
 	UnregisterDetailCustomizations();
 
 	UnregisterAssets();
+}
+
+void FAIFlowEditorModule::TrySetFlowNodeDisplayStyleDefaults() const
+{
+	// Force the flow module to be loaded before we try to access the Settings
+	FModuleManager::LoadModuleChecked<FFlowModule>("Flow");
+
+	UFlowGraphSettings& Settings = *UFlowGraphSettings::Get();
+	(void) Settings.TryAddDefaultNodeDisplayStyle(FFlowNodeDisplayStyleConfig(TAG_Flow_NodeDisplayStyle_Node_Blackboard, FLinearColor(-0.7f, 0.58f, 1.0f, 1.0f)));
 }
 
 void FAIFlowEditorModule::RegisterAssets()

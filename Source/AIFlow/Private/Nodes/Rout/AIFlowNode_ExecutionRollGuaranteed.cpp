@@ -13,8 +13,8 @@ UAIFlowNode_ExecutionRollGuaranteed::UAIFlowNode_ExecutionRollGuaranteed(const F
 	: Super(ObjectInitializer)
 {
 #if WITH_EDITOR
+	NodeDisplayStyle = TAG_Flow_NodeDisplayStyle_Node;
 	Category = TEXT("Route");
-	NodeStyle = EFlowNodeStyle::Logic;
 #endif
 
 	FString ResetPinTooltip = TEXT("Finish work of this node.");
