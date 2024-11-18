@@ -13,7 +13,7 @@ UAIFlowNode_ExecutionRollGuaranteed::UAIFlowNode_ExecutionRollGuaranteed(const F
 	: Super(ObjectInitializer)
 {
 #if WITH_EDITOR
-	NodeDisplayStyle = TAG_Flow_NodeDisplayStyle_Node;
+	NodeDisplayStyle = FlowNodeStyle::Default;
 	Category = TEXT("Route");
 #endif
 

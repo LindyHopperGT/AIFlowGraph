@@ -4,4 +4,8 @@
 
 #include "NativeGameplayTags.h"
 
-AIFLOW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Flow_NodeDisplayStyle_Node_Blackboard);
+namespace FlowNodeStyle
+{
+	AIFLOW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Blackboard);
+}
+

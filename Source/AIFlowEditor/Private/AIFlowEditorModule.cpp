@@ -2,7 +2,6 @@
 
 #include "AIFlowEditorModule.h"
 
-#include "Asset/AssetTypeActions_AIFlowAsset.h"
 #include "DetailCustomizations/FlowBlackboardEntryCustomization.h"
 #include "DetailCustomizations/ConfigurableEnumPropertyCustomization.h"
 #include "AIFlowTags.h"
@@ -39,7 +38,7 @@ void FAIFlowEditorModule::TrySetFlowNodeDisplayStyleDefaults() const
 	FModuleManager::LoadModuleChecked<FFlowModule>("Flow");
 
 	UFlowGraphSettings& Settings = *UFlowGraphSettings::Get();
-	(void) Settings.TryAddDefaultNodeDisplayStyle(FFlowNodeDisplayStyleConfig(TAG_Flow_NodeDisplayStyle_Node_Blackboard, FLinearColor(-0.7f, 0.58f, 1.0f, 1.0f)));
+	(void) Settings.TryAddDefaultNodeDisplayStyle(FFlowNodeDisplayStyleConfig(FlowNodeStyle::Blackboard, FLinearColor(-0.7f, 0.58f, 1.0f, 1.0f)));
 }
 
 void FAIFlowEditorModule::RegisterAssets()
@@ -70,10 +69,6 @@ void FAIFlowEditorModule::RegisterAssets()
 			FlowAssetCategory = AssetTools.RegisterAdvancedAssetCategory(FName(TEXT("Flow")), AssetCategoryText);
 		}
 	}
-
-	const TSharedRef<IAssetTypeActions> AIFlowAssetActions = MakeShareable(new FAssetTypeActions_AIFlowAsset());
-	RegisteredAssetActions.Add(AIFlowAssetActions);
-	AssetTools.RegisterAssetTypeActions(AIFlowAssetActions);
 }
 
 void FAIFlowEditorModule::UnregisterAssets()

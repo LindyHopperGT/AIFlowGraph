@@ -12,7 +12,7 @@ UFlowNodeAddOn_InjectComponentsBase::UFlowNodeAddOn_InjectComponentsBase()
 	: Super()
 {
 #if WITH_EDITOR
-	NodeDisplayStyle = TAG_Flow_NodeDisplayStyle_AddOn_PerSpawnedActor;
+	NodeDisplayStyle = FlowNodeStyle::AddOn_PerSpawnedActor;
 	Category = TEXT("Per-Spawned Actor");
 #endif
 }

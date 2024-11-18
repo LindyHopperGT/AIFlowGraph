@@ -14,7 +14,7 @@ UAIFlowNode_ExecutionRollWeighted::UAIFlowNode_ExecutionRollWeighted(const FObje
 	: Super(ObjectInitializer)
 {
 #if WITH_EDITOR
-	NodeDisplayStyle = TAG_Flow_NodeDisplayStyle_Node;
+	NodeDisplayStyle = FlowNodeStyle::Default;
 	Category = TEXT("Route");
 #endif
 
