@@ -3,18 +3,18 @@
 #pragma once
 
 #include "AIFlowActorBlackboardHelper.h"
-#include "AddOns/AIFlowNodeAddOn.h"
 #include "Interfaces/FlowPerSpawnedActorInterface.h"
+#include "FlowNodeAddOn_InjectComponentsBase.h"
 
 #include "FlowNodeAddOn_ConfigureSpawnedActorBlackboard.generated.h"
+
+class UFlowInjectComponentsManager;
 
 /**
  * Set blackboard values to the values defined in the Entries array
  */
 UCLASS(DisplayName = "Configure Spawned Actor Blackboard")
-class AIFLOW_API UFlowNodeAddOn_ConfigureSpawnedActorBlackboard
-	: public UAIFlowNodeAddOn
-	, public IFlowPerSpawnedActorInterface
+class AIFLOW_API UFlowNodeAddOn_ConfigureSpawnedActorBlackboard : public UFlowNodeAddOn_InjectComponentsBase
 {
 	GENERATED_BODY()
 
@@ -58,9 +58,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Configuration, DisplayName = "Blackboard Component Search Rule", meta = (DisplayOrder = 2))
 	EActorBlackboardSearchRule SearchRule = EActorBlackboardSearchRule::ActorAndController;
 
-	// TODO (gtaylor) Implement blackboard injection if missing feature
-	UPROPERTY(VisibleAnywhere, Category = Configuration, DisplayName = "Blackboard Injection Rule", meta = (DisplayOrder = 2))
-	EActorBlackboardInjectRule InjectRule = EActorBlackboardInjectRule::DoNotInjectIfMissing;
+	// Injection rule, if desired blackboard is not found
+	UPROPERTY(EditAnywhere, Category = Configuration, DisplayName = "Blackboard Injection Rule", meta = (DisplayOrder = 2))
+	EActorBlackboardInjectRule InjectRule = EActorBlackboardInjectRule::InjectOntoActorIfMissing;
 
 	UPROPERTY(EditAnywhere, Category = Configuration, DisplayName = "Per-Actor Options Assignment Method", meta = (DisplayOrder = 4))
 	EPerActorOptionsAssignmentMethod PerActorOptionsAssignmentMethod = EPerActorOptionsAssignmentMethod::InOrderWithWrapping;

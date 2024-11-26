@@ -1,6 +1,7 @@
 // Copyright https://github.com/MothCocoon/FlowGraph/graphs/contributors
 
 #include "AddOns/FlowNodeAddOn_PredicateCompareBlackboardValue.h"
+#include "AIFlowActorBlackboardHelper.h"
 #include "Blackboard/FlowBlackboardEntryValue.h"
 #include "FlowAsset.h"
 #include "FlowSettings.h"
@@ -40,26 +41,31 @@ void UFlowNodeAddOn_PredicateCompareBlackboardValue::PostEditChangeProperty(FPro
 
 	(void) TryRefreshIsKeyLeftSelected();
 
+	const UBlackboardData* BlackboardAssetForEditor = GetBlackboardAssetForEditor();
+
 	const FName PropertyName = PropertyChangedEvent.Property->GetFName();
 	const FName MemberPropertyName = PropertyChangedEvent.MemberProperty->GetFName();
 
 	if (MemberPropertyName == GET_MEMBER_NAME_CHECKED(UFlowNodeAddOn_PredicateCompareBlackboardValue, KeyLeft) ||
 		PropertyName == GET_MEMBER_NAME_CHECKED(UFlowNodeAddOn_PredicateCompareBlackboardValue, OperatorType))
 	{
-		TSubclassOf<UBlackboardKeyType> KeyTypeClass = TryGetKeyTypeClass();
-		TSubclassOf<UFlowBlackboardEntryValue> FlowEntrySubclass = UFlowBlackboardEntryValue::GetFlowBlackboardEntryValueClassForKeyType(KeyTypeClass);
-
-		const bool bIsArithmeticOperation = IsArithmeticOperation(OperatorType);
-		const bool bAllowArithmeticOperations = (FlowEntrySubclass && FlowEntrySubclass->GetDefaultObject<UFlowBlackboardEntryValue>()->SupportsArithmeticOperations());
-
-		if (!bAllowArithmeticOperations && bIsArithmeticOperation)
+		if (IsValid(BlackboardAssetForEditor))
 		{
-			// Reset OperatorType if the KeyType doesn't support Arithmetic operations
-			OperatorType = EPredicateCompareOperatorType::EqualityFirst;
+			TSubclassOf<UBlackboardKeyType> KeyTypeClass = TryGetKeyTypeClass(*BlackboardAssetForEditor);
+			TSubclassOf<UFlowBlackboardEntryValue> FlowEntrySubclass = UFlowBlackboardEntryValue::GetFlowBlackboardEntryValueClassForKeyType(KeyTypeClass);
+
+			const bool bIsArithmeticOperation = IsArithmeticOperation(OperatorType);
+			const bool bAllowArithmeticOperations = (FlowEntrySubclass && FlowEntrySubclass->GetDefaultObject<UFlowBlackboardEntryValue>()->SupportsArithmeticOperations());
+
+			if (!bAllowArithmeticOperations && bIsArithmeticOperation)
+			{
+				// Reset OperatorType if the KeyType doesn't support Arithmetic operations
+				OperatorType = EPredicateCompareOperatorType::EqualityFirst;
+			}
 		}
 	}
 
-	if (TryRefreshKeyEntriesAndExplicitValues())
+	if (IsValid(BlackboardAssetForEditor) && TryRefreshKeyEntriesAndExplicitValues(*BlackboardAssetForEditor))
 	{
 		OnReconstructionRequested.ExecuteIfBound();
 	}
@@ -78,24 +84,24 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::TryRefreshIsKeyLeftSelected
 	return false;
 }
 
-bool UFlowNodeAddOn_PredicateCompareBlackboardValue::TryRefreshKeyEntriesAndExplicitValues()
+bool UFlowNodeAddOn_PredicateCompareBlackboardValue::TryRefreshKeyEntriesAndExplicitValues(const UBlackboardData& BlackboardData)
 {
 	bool bMadeChanges = false;
 
 	const bool bAllowRightKeyEntry = bIsKeyLeftSelected && !bUseExplicitValueForRightHandSide;
-	bMadeChanges = TryRefreshSelectedKeyType(bAllowRightKeyEntry, KeyRight) || bMadeChanges;
+	bMadeChanges = TryRefreshSelectedKeyType(BlackboardData, bAllowRightKeyEntry, KeyRight) || bMadeChanges;
 
 	const bool bAllowRightExplicitValue = bIsKeyLeftSelected && bUseExplicitValueForRightHandSide;
-	bMadeChanges = TryRefreshExplicitValue(bAllowRightExplicitValue, ExplicitValueRight) || bMadeChanges;
+	bMadeChanges = TryRefreshExplicitValue(BlackboardData, bAllowRightExplicitValue, ExplicitValueRight) || bMadeChanges;
 
 	return bMadeChanges;
 }
 
-bool UFlowNodeAddOn_PredicateCompareBlackboardValue::TryRefreshSelectedKeyType(bool bEnableKeyEntry, FFlowBlackboardEntry& InOutKeyProperty)
+bool UFlowNodeAddOn_PredicateCompareBlackboardValue::TryRefreshSelectedKeyType(const UBlackboardData& BlackboardData, bool bEnableKeyEntry, FFlowBlackboardEntry& InOutKeyProperty)
 {
 	if (bEnableKeyEntry)
 	{
-		UBlackboardKeyType const* KeyType = TryGetKeyType();
+		UBlackboardKeyType const* KeyType = TryGetKeyType(BlackboardData);
 		const bool bMadeChanges = InOutKeyProperty.AllowedTypes.IsEmpty() || !KeyType->IsAllowedByFilter(InOutKeyProperty.AllowedTypes[0]);
 
 		if (bMadeChanges)
@@ -123,11 +129,11 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::TryRefreshSelectedKeyType(b
 	}
 }
 
-bool UFlowNodeAddOn_PredicateCompareBlackboardValue::TryRefreshExplicitValue(bool bEnableExplicitValue, TObjectPtr<UFlowBlackboardEntryValue>& InOutExplicitValue)
+bool UFlowNodeAddOn_PredicateCompareBlackboardValue::TryRefreshExplicitValue(const UBlackboardData& BlackboardData, bool bEnableExplicitValue, TObjectPtr<UFlowBlackboardEntryValue>& InOutExplicitValue)
 {
 	if (bEnableExplicitValue)
 	{
-		const UBlackboardKeyType* KeyType = TryGetKeyType();
+		const UBlackboardKeyType* KeyType = TryGetKeyType(BlackboardData);
 		check(IsValid(KeyType));
 
 		// Create the ExplicitValue object if we don't have one or it is not of the desired type
@@ -159,9 +165,9 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::TryRefreshExplicitValue(boo
 	}
 }
 
-TSubclassOf<UBlackboardKeyType> UFlowNodeAddOn_PredicateCompareBlackboardValue::TryGetKeyTypeClass() const
+TSubclassOf<UBlackboardKeyType> UFlowNodeAddOn_PredicateCompareBlackboardValue::TryGetKeyTypeClass(const UBlackboardData& BlackboardData) const
 {
-	UBlackboardKeyType const* KeyType = TryGetKeyType();
+	UBlackboardKeyType const* KeyType = TryGetKeyType(BlackboardData);
 	if (IsValid(KeyType))
 	{
 		return KeyType->GetClass();
@@ -170,25 +176,39 @@ TSubclassOf<UBlackboardKeyType> UFlowNodeAddOn_PredicateCompareBlackboardValue::
 	return nullptr;
 }
 
-UBlackboardKeyType const* UFlowNodeAddOn_PredicateCompareBlackboardValue::TryGetKeyType() const
+UBlackboardKeyType const* UFlowNodeAddOn_PredicateCompareBlackboardValue::TryGetKeyType(const UBlackboardData& BlackboardData) const
 {
-	UBlackboardData* BlackboardData = GetBlackboardAsset();
-	if (!IsValid(BlackboardData))
-	{
-		return nullptr;
-	}
-
 	FBlackboard::FKey KeyID = FBlackboard::InvalidKey;
 	FBlackboardEntry const* KeyEntry = nullptr;
 
 	constexpr bool bWarnIfMissing = false;
 
-	if (!TryGetBlackboardKeyInfo(*BlackboardData, KeyLeft, KeyID, KeyEntry, bWarnIfMissing))
+	if (!TryGetBlackboardKeyInfo(BlackboardData, KeyLeft, KeyID, KeyEntry, bWarnIfMissing))
 	{
 		return nullptr;
 	}
 
 	return KeyEntry->KeyType;
+}
+
+UBlackboardData* UFlowNodeAddOn_PredicateCompareBlackboardValue::GetBlackboardAssetForEditor() const
+{
+	if (IsValid(SpecificBlackboardAsset))
+	{
+		return SpecificBlackboardAsset;
+	}
+
+	return GetBlackboardAsset();
+}
+
+UBlackboardData* UFlowNodeAddOn_PredicateCompareBlackboardValue::GetBlackboardAssetForPropertyHandle(const TSharedPtr<IPropertyHandle>& PropertyHandle) const
+{
+	if (UBlackboardData* BlackboardAssetForEditor = GetBlackboardAssetForEditor())
+	{
+		return BlackboardAssetForEditor;
+	}
+	
+	return Super::GetBlackboardAssetForPropertyHandle(PropertyHandle);
 }
 
 FText UFlowNodeAddOn_PredicateCompareBlackboardValue::GetNodeTitle() const
@@ -254,18 +274,11 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::TryGetBlackboardKeyInfo(
 
 bool UFlowNodeAddOn_PredicateCompareBlackboardValue::EvaluatePredicate_Implementation() const
 {
-	const UBlackboardComponent* BlackboardComponent = GetBlackboardComponent();
-	if (!IsValid(BlackboardComponent))
-	{
-		LogError(TEXT("Cannot EvaluatePredicate on a blackboard key without a Blackboard Component"));
+	const FAIFlowCachedBlackboardReference CachedBlackboard(*this, SpecificBlackboardAsset, SpecificBlackboardSearchRule);
 
-		return false;
-	}
-
-	const UBlackboardData* BlackboardData = BlackboardComponent->GetBlackboardAsset();
-	if (!IsValid(BlackboardData))
+	if (!CachedBlackboard.IsValid())
 	{
-		LogError(TEXT("Cannot EvaluatePredicate on a blackboard key without a Blackboard Asset"));
+		LogError(TEXT("Cannot EvaluatePredicate on a blackboard key without a Blackboard Component or Asset"));
 
 		return false;
 	}
@@ -274,7 +287,7 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::EvaluatePredicate_Implement
 	constexpr bool bWarnIfBlackboardKeysAreMissing = true;
 	FBlackboard::FKey KeyLeftID = FBlackboard::InvalidKey;
 	FBlackboardEntry const* KeyLeftTypeEntry = nullptr;
-	if (!TryGetBlackboardKeyInfo(*BlackboardData, KeyLeft, KeyLeftID, KeyLeftTypeEntry, bWarnIfBlackboardKeysAreMissing))
+	if (!TryGetBlackboardKeyInfo(*CachedBlackboard.BlackboardData, KeyLeft, KeyLeftID, KeyLeftTypeEntry, bWarnIfBlackboardKeysAreMissing))
 	{
 		LogError(TEXT("Cannot EvaluatePredicate on a blackboard key without a valid Key (left)"));
 
@@ -288,14 +301,14 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::EvaluatePredicate_Implement
 	if (IsValid(ExplicitValueRight))
 	{
 		// do the key vs explicit value comparison
-		bCompareResult = ComputeCompareResultWithExplicitValue(KeyLeftTypeClass, KeyLeftID, *ExplicitValueRight);
+		bCompareResult = ComputeCompareResultWithExplicitValue(*CachedBlackboard.BlackboardComponent, KeyLeftTypeClass, KeyLeftID, *ExplicitValueRight);
 	}
 	else
 	{
 		// Look up the right-hand side key's information
 		FBlackboard::FKey KeyRightID = FBlackboard::InvalidKey;
 		FBlackboardEntry const* KeyRightTypeEntry = nullptr;
-		if (!TryGetBlackboardKeyInfo(*BlackboardData, KeyRight, KeyRightID, KeyRightTypeEntry, bWarnIfBlackboardKeysAreMissing))
+		if (!TryGetBlackboardKeyInfo(*CachedBlackboard.BlackboardData, KeyRight, KeyRightID, KeyRightTypeEntry, bWarnIfBlackboardKeysAreMissing))
 		{
 			LogError(TEXT("Cannot EvaluatePredicate on a blackboard key without a valid Key (right)"));
 
@@ -317,24 +330,22 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::EvaluatePredicate_Implement
 		}
 
 		// Do the key vs. key comparison 
-		bCompareResult = ComputeCompareResult(KeyLeftTypeClass, KeyLeftID, KeyRightID);
+		bCompareResult = ComputeCompareResult(*CachedBlackboard.BlackboardComponent, KeyLeftTypeClass, KeyLeftID, KeyRightID);
 	}
 
 	return bCompareResult;
 }
 
 bool UFlowNodeAddOn_PredicateCompareBlackboardValue::ComputeCompareResultWithExplicitValue(
+	const UBlackboardComponent& BlackboardComponent,
 	const TSubclassOf<UBlackboardKeyType> BlackboardKeyType,
 	const FBlackboard::FKey LeftKeyID,
 	const UFlowBlackboardEntryValue& RightExplicitValue) const
 {
-	const UBlackboardComponent* BlackboardComponent = GetBlackboardComponent();
-	check(BlackboardComponent);
-
 	if (IsEqualityOperation(OperatorType))
 	{
 		// Do the equality (==, !=) comparison
-		const EBlackboardCompare::Type CompareResult = ExplicitValueRight->CompareKeyValues(BlackboardComponent, KeyLeft.GetKeyName());
+		const EBlackboardCompare::Type CompareResult = ExplicitValueRight->CompareKeyValues(&BlackboardComponent, KeyLeft.GetKeyName());
 
 		const bool bIsMatch = (CompareResult == EBlackboardCompare::Equal);
 		const bool bExpectsMatch = (OperatorType == EPredicateCompareOperatorType::Equal);
@@ -366,14 +377,14 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::ComputeCompareResultWithExp
 		const UBlackboardKeyType* BlackboardKeyTypeCDO = BlackboardKeyType->GetDefaultObject<UBlackboardKeyType>();
 		check(IsValid(BlackboardKeyTypeCDO));
 
-		const uint8* LeftMemory = BlackboardComponent->GetKeyRawData(LeftKeyID);
+		const uint8* LeftMemory = BlackboardComponent.GetKeyRawData(LeftKeyID);
 		check(LeftMemory);
 
 		const EArithmeticKeyOperation::Type ArithmeticOp = ConvertPredicateCompareOperatorTypeToArithmeticKeyOperation(OperatorType);
 
 		const bool bArithmeticResult = 
 			BlackboardKeyTypeCDO->WrappedTestArithmeticOperation(
-				*BlackboardComponent,
+				BlackboardComponent,
 				LeftMemory,
 				ArithmeticOp,
 				RightIntValue,
@@ -388,17 +399,15 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::ComputeCompareResultWithExp
 }
 
 bool UFlowNodeAddOn_PredicateCompareBlackboardValue::ComputeCompareResult(
+	const UBlackboardComponent& BlackboardComponent,
 	const TSubclassOf<UBlackboardKeyType> BlackboardKeyType,
 	const FBlackboard::FKey LeftKeyID,
 	const FBlackboard::FKey RightKeyID) const
 {
-	const UBlackboardComponent* BlackboardComponent = GetBlackboardComponent();
-	check(BlackboardComponent);
-
 	if (IsEqualityOperation(OperatorType))
 	{
 		// Do the equality (==, !=) comparison
-		const EBlackboardCompare::Type CompareResult = BlackboardComponent->CompareKeyValues(BlackboardKeyType, LeftKeyID, RightKeyID);
+		const EBlackboardCompare::Type CompareResult = BlackboardComponent.CompareKeyValues(BlackboardKeyType, LeftKeyID, RightKeyID);
 
 		const bool bIsMatch = (CompareResult == EBlackboardCompare::Equal);
 		const bool bExpectsMatch = (OperatorType == EPredicateCompareOperatorType::Equal);
@@ -417,17 +426,17 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::ComputeCompareResult(
 		float RightFloatValue = 0.0f;
 		if (BlackboardKeyType == UBlackboardKeyType_Float::StaticClass())
 		{
-			RightFloatValue = BlackboardComponent->GetValueAsFloat(KeyRight.GetKeyName());
+			RightFloatValue = BlackboardComponent.GetValueAsFloat(KeyRight.GetKeyName());
 			RightIntValue = FMath::FloorToInt32(RightFloatValue);
 		}
 		else if (BlackboardKeyType == UBlackboardKeyType_Int::StaticClass())
 		{
-			RightIntValue = BlackboardComponent->GetValueAsInt(KeyRight.GetKeyName());
+			RightIntValue = BlackboardComponent.GetValueAsInt(KeyRight.GetKeyName());
 			RightFloatValue = static_cast<float>(RightIntValue);
 		}
 		else if (BlackboardKeyType == UBlackboardKeyType_Enum::StaticClass())
 		{
-			RightIntValue = BlackboardComponent->GetValueAsEnum(KeyRight.GetKeyName());
+			RightIntValue = BlackboardComponent.GetValueAsEnum(KeyRight.GetKeyName());
 			RightFloatValue = static_cast<float>(RightIntValue);
 		}
 		else
@@ -443,14 +452,14 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::ComputeCompareResult(
 		const UBlackboardKeyType * BlackboardKeyTypeCDO = BlackboardKeyType->GetDefaultObject<UBlackboardKeyType>();
 		check(IsValid(BlackboardKeyTypeCDO));
 
-		const uint8* LeftMemory = BlackboardComponent->GetKeyRawData(LeftKeyID);
+		const uint8* LeftMemory = BlackboardComponent.GetKeyRawData(LeftKeyID);
 		check(LeftMemory);
 
 		const EArithmeticKeyOperation::Type ArithmeticOp = ConvertPredicateCompareOperatorTypeToArithmeticKeyOperation(OperatorType);
 
 		const bool bArithmeticResult =
 			BlackboardKeyTypeCDO->WrappedTestArithmeticOperation(
-				*BlackboardComponent,
+				BlackboardComponent,
 				LeftMemory,
 				ArithmeticOp,
 				RightIntValue,
@@ -462,28 +471,6 @@ bool UFlowNodeAddOn_PredicateCompareBlackboardValue::ComputeCompareResult(
 	LogError(FString::Printf(TEXT("Incorrectly configured CompareBlackboardValues %s"), *GetName()));
 
 	return false;
-}
-
-FString UFlowNodeAddOn_PredicateCompareBlackboardValue::GetOperatorSymbolString(EPredicateCompareOperatorType OperatorType)
-{
-	static_assert(static_cast<int32>(EPredicateCompareOperatorType::Max) == 6, TEXT("This should be kept up to date with the enum"));
-	switch(OperatorType)
-	{
-	case EPredicateCompareOperatorType::Equal:
-		return TEXT("==");
-	case EPredicateCompareOperatorType::NotEqual:
-		return TEXT("!=");
-	case EPredicateCompareOperatorType::Less:
-		return TEXT("<");
-	case EPredicateCompareOperatorType::LessOrEqual:
-		return TEXT("<=");
-	case EPredicateCompareOperatorType::Greater:
-		return TEXT(">");
-	case EPredicateCompareOperatorType::GreaterOrEqual:
-		return TEXT(">=");
-	default:
-		return TEXT("?");
-	}
 }
 
 EArithmeticKeyOperation::Type UFlowNodeAddOn_PredicateCompareBlackboardValue::ConvertPredicateCompareOperatorTypeToArithmeticKeyOperation(

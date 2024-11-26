@@ -2,7 +2,7 @@
 
 #include "Nodes/FlowNode_SetBlackboardValuesOnActorBase.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "FlowAsset.h"
+#include "AIFlowAsset.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(FlowNode_SetBlackboardValuesOnActorBase)
 
@@ -29,11 +29,22 @@ TArray<AActor*> UFlowNode_SetBlackboardValuesOnActorBase::TryResolveActorsForBla
 
 TArray<UBlackboardComponent*> UFlowNode_SetBlackboardValuesOnActorBase::GetBlackboardComponentsToApplyTo() const
 {
+	TSubclassOf<UBlackboardComponent> BlackboardComponentClass = UBlackboardComponent::StaticClass();
+	if (UAIFlowAsset* AIFlowAsset = Cast<UAIFlowAsset>(GetFlowAsset()))
+	{
+		BlackboardComponentClass = AIFlowAsset->GetBlackboardComponentClass();
+	}
+
+	// TODO (gtaylor) Implement blackboard injection if missing feature
+	constexpr UFlowInjectComponentsManager* InjectComponentsManager = nullptr;
+
 	TArray<UBlackboardComponent*> BlackboardComponents = 
 		FAIFlowActorBlackboardHelper::FindOrAddBlackboardComponentOnActors(
 			TryResolveActorsForBlackboard(),
-			ExpectedBlackboardData,
-			SearchRule,
+			InjectComponentsManager,
+			BlackboardComponentClass,
+			SpecificBlackboardAsset,
+			SpecificBlackboardSearchRule,
 			InjectRule);
 
 	return BlackboardComponents;

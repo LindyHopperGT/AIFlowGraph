@@ -39,7 +39,11 @@ public:
 	virtual UBlackboardData* GetBlackboardAsset() const override;
 	// --
 
-	static UBlackboardComponent* TryFindBlackboardComponentOnActor(AActor& Actor, UBlackboardData* OptionalBlackboardData);
+	UFUNCTION(BlueprintCallable, Category = "AI Flow", DisplayName = TryFindBlackboardComponentOnActor)
+	static UBlackboardComponent* BP_TryFindBlackboardComponentOnActor(AActor* Actor, UBlackboardData* OptionalBlackboardData = nullptr);
+	static UBlackboardComponent* TryFindBlackboardComponentOnActor(AActor& Actor, UBlackboardData* OptionalBlackboardData = nullptr);
+
+	TSubclassOf<UBlackboardComponent> GetBlackboardComponentClass() const { return BlackboardComponentClass; }
 
 protected:
 
@@ -54,7 +58,7 @@ protected:
 protected:
 
 	// Blackboard asset for this FlowAsset
-	UPROPERTY(EditAnywhere, Category = "AI Flow Asset")
+	UPROPERTY(EditAnywhere, Category = "AI Flow")
 	TObjectPtr<UBlackboardData> BlackboardAsset = nullptr;
 
 	// Cached blackboard component (on the owning actor)

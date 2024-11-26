@@ -23,14 +23,16 @@ bool IFlowSpawnedActorInterface::ImplementsInterfaceSafe(const UObject* Object)
 
 void IFlowSpawnedActorInterface::DispatchFinishedSpawningActorFromFlowToActorAndComponents(AActor* SpawnedActor, UFlowNodeBase* SpawningNodeOrAddOn)
 {
+	check(SpawnedActor);
+
 	if (ImplementsInterfaceSafe(SpawnedActor))
 	{
 		Execute_FinishedSpawningActorFromFlow(SpawnedActor, SpawnedActor, SpawningNodeOrAddOn);
+	}
 
-		const TArray<UActorComponent*> Components = SpawnedActor->GetComponentsByInterface(UFlowSpawnedActorInterface::StaticClass());
-		for (UActorComponent* Component : Components)
-		{
-			Execute_FinishedSpawningActorFromFlow(Component, SpawnedActor, SpawningNodeOrAddOn);
-		}
+	const TArray<UActorComponent*> Components = SpawnedActor->GetComponentsByInterface(UFlowSpawnedActorInterface::StaticClass());
+	for (UActorComponent* Component : Components)
+	{
+		Execute_FinishedSpawningActorFromFlow(Component, SpawnedActor, SpawningNodeOrAddOn);
 	}
 }

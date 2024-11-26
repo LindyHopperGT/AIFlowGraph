@@ -79,7 +79,7 @@ void UFlowNode_SetBlackboardValuesOnActorByKey::PostInitProperties()
 
 UBlackboardData* UFlowNode_SetBlackboardValuesOnActorByKey::GetBlackboardAssetForPropertyHandle(const TSharedPtr<IPropertyHandle>& PropertyHandle) const
 {
-	if (ExpectedBlackboardData && PropertyHandle)
+	if (SpecificBlackboardAsset && PropertyHandle)
 	{
 		// Use the ExpectedBlackboardData for all properties except the BlackboardActorKey,
 		// which we should use the owning Flow Graph's blackboard instead.
@@ -87,7 +87,7 @@ UBlackboardData* UFlowNode_SetBlackboardValuesOnActorByKey::GetBlackboardAssetFo
 		const FName PropertyName = PropertyHandle->GetProperty()->GetFName();
 		if (PropertyName != GET_MEMBER_NAME_CHECKED(UFlowNode_SetBlackboardValuesOnActorByKey, BlackboardActorKey))
 		{
-			return ExpectedBlackboardData;
+			return SpecificBlackboardAsset;
 		}
 	}
 

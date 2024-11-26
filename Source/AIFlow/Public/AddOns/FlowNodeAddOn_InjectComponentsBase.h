@@ -30,18 +30,16 @@ public:
 	// --
 
 	// IFlowCoreExecutableInterface
-	virtual void InitializeInstance() override;
 	virtual void DeinitializeInstance() override;
-	// --
-
-	// UFlowNodeBase
-	virtual void UpdateNodeConfigText_Implementation() override;
 	// --
 
 protected:
 
 	UFUNCTION()
 	void OnBeforeActorRemoved(AActor* Actor);
+
+	void EnsureInjectComponentsManager();
+	void CleanupInjectComponentsManager();
 
 	// Functions for subclasses to apply additional monitoring to Actors
 	virtual void OnStartMonitoringActor(AActor& Actor) { }
@@ -52,7 +50,4 @@ protected:
 	// Manager object to inject and remove components from actors
 	UPROPERTY()
 	TObjectPtr<UFlowInjectComponentsManager> InjectComponentsManager = nullptr;
-
-	UPROPERTY(EditAnywhere, Category = Configuration, meta = (ShowOnlyInnerProperties))
-	FFlowInjectComponentsHelper InjectComponentsHelper;
 };

@@ -2,6 +2,9 @@
 
 #pragma once
 
+#include "Templates/SubclassOf.h"
+#include "Types/FlowEnumUtils.h"
+
 #include "AIFlowActorBlackboardHelper.generated.h"
 
 // Forward Declarations
@@ -10,23 +13,30 @@ class FTextBuilder;
 class UBlackboardComponent;
 class UBlackboardData;
 class UFlowBlackboardEntryValue;
+class UFlowNodeBase;
+class UFlowInjectComponentsManager;
 
 // Rule enum for injecting missing blackboards on Actors
 UENUM()
 enum class EActorBlackboardInjectRule : uint8
 {
-	// TODO (gtaylor) Add support for injecting the missing blackboard
-	InjectOntoActorIfMissing UMETA(Hidden),
-
-	// TODO (gtaylor) Add support for injecting the missing blackboard
-	InjectOntoControllerIfMissing UMETA(Hidden),
-
+	InjectOntoActorIfMissing,
+	InjectOntoControllerIfMissing,
 	DoNotInjectIfMissing,
 
 	Max UMETA(Hidden),
 	Invalid UMETA(Hidden),
 	Min = 0 UMETA(Hidden),
+
+	NeedsInjectComponentsManagerFirst = InjectOntoActorIfMissing UMETA(Hidden),
+	NeedsInjectComponentsManagerLast = InjectOntoControllerIfMissing UMETA(Hidden),
 };
+FLOW_ENUM_RANGE_VALUES(EActorBlackboardInjectRule);
+
+namespace EActorBlackboardInjectRule_Classifiers
+{
+	FORCEINLINE bool NeedsInjectComponentsManager(EActorBlackboardInjectRule Rule) { return FLOW_IS_ENUM_IN_SUBRANGE(Rule, EActorBlackboardInjectRule::NeedsInjectComponentsManager); }
+}
 
 // Rule enum for searching for Actor blackboards
 UENUM()
@@ -38,13 +48,27 @@ enum class EActorBlackboardSearchRule : uint8
 	// Search the Actor's Controller only for the BlackboardComponent
 	ControllerOnly UMETA(DisplayName = "Controller Only"),
 
+	// Search the GameState actor for the BlackboardComponent
+	GameStateOnly UMETA(DisplayName = "GameState Only"),
+
 	// Search both the Actor and the Controller for the BlackboardComponent
 	ActorAndController UMETA(DisplayName = "Actor & Controller"),
+
+	// Search the Actor, its Controller and the GameState actor for the BlackboardComponent
+	ActorAndControllerAndGameState UMETA(DisplayName = "Actor, Controller & GameState"),
 
 	Max UMETA(Hidden),
 	Invalid UMETA(Hidden),
 	Min = 0 UMETA(Hidden),
 };
+FLOW_ENUM_RANGE_VALUES(EActorBlackboardSearchRule);
+
+namespace EActorBlackboardSearchRule_Classifiers
+{
+	FORCEINLINE bool CanSearchActor(EActorBlackboardSearchRule Rule) { return Rule == EActorBlackboardSearchRule::ActorOnly || Rule == EActorBlackboardSearchRule::ActorAndController || Rule == EActorBlackboardSearchRule::ActorAndControllerAndGameState; }
+	FORCEINLINE bool CanSearchController(EActorBlackboardSearchRule Rule) { return Rule == EActorBlackboardSearchRule::ControllerOnly || Rule == EActorBlackboardSearchRule::ActorAndController || Rule == EActorBlackboardSearchRule::ActorAndControllerAndGameState; }
+	FORCEINLINE bool CanSearchGameState(EActorBlackboardSearchRule Rule) { return Rule == EActorBlackboardSearchRule::GameStateOnly || Rule == EActorBlackboardSearchRule::ActorAndControllerAndGameState; }
+}
 
 // Method to apply Per-Actor Options to Actors
 UENUM(BlueprintType)
@@ -66,6 +90,7 @@ enum class EPerActorOptionsAssignmentMethod : uint8
 	Invalid UMETA(Hidden),
 	Min = 0 UMETA(Hidden),
 };
+FLOW_ENUM_RANGE_VALUES(EPerActorOptionsAssignmentMethod);
 
 // A bundle of Blackboard Entries to set on an actor(s)
 USTRUCT(BlueprintType)
@@ -102,6 +127,8 @@ public:
 	// otherwise, it restricts the result to a blackboard component that uses the blackboard data specified.
 	static TArray<UBlackboardComponent*> FindOrAddBlackboardComponentOnActors(
 		const TArray<AActor*>& Actors,
+		UFlowInjectComponentsManager* InjectComponentsManager,
+		TSubclassOf<UBlackboardComponent> BlackboardComponentClass,
 		UBlackboardData* OptionalBlackboardData,
 		EActorBlackboardSearchRule SearchRule,
 		EActorBlackboardInjectRule InjectRule);
@@ -111,9 +138,14 @@ public:
 	// otherwise, it restricts the result to a blackboard component that uses the blackboard data specified.
 	static UBlackboardComponent* FindOrAddBlackboardComponentOnActor(
 		AActor& Actor,
+		UFlowInjectComponentsManager* InjectComponentsManager,
+		TSubclassOf<UBlackboardComponent> BlackboardComponentClass,
 		UBlackboardData* OptionalBlackboardData,
 		EActorBlackboardSearchRule SearchRule,
 		EActorBlackboardInjectRule InjectRule);
+
+	// Try to find the blackboard on either the Actor, their Controller or the GameState, as directed by the supplied parameters
+	static UBlackboardComponent* TryFindBlackboardComponent(UWorld& World, EActorBlackboardSearchRule SearchRule, AActor* OptionalActor, UBlackboardData* OptionalBlackboardData);
 
 #if WITH_EDITOR
 	// Helper function to append text for Flow Node/AddOn Configuration display
@@ -145,4 +177,28 @@ protected:
 	// May be in-order, or shuffled, based on the AssignmentMethod used to generate the array.
 	UPROPERTY(Transient)
 	TArray<int32> OrderedOptionIndices;
+};
+
+// Helper struct to cache the blackboard component and runtime data reference
+USTRUCT()
+struct FAIFlowCachedBlackboardReference
+{
+	GENERATED_BODY()
+
+public:
+
+	AIFLOW_API FAIFlowCachedBlackboardReference() = default;
+	AIFLOW_API FAIFlowCachedBlackboardReference(const UFlowNodeBase& FlowNodeBase, UBlackboardData* OptionalSpecificBlackboardData = nullptr, EActorBlackboardSearchRule SpecificBlackboardSearchRule = EActorBlackboardSearchRule::ActorAndControllerAndGameState)
+		{ (void) TryCacheBlackboardReference(FlowNodeBase, OptionalSpecificBlackboardData, SpecificBlackboardSearchRule); }
+
+	AIFLOW_API bool TryCacheBlackboardReference(const UFlowNodeBase& FlowNodeBase, UBlackboardData* OptionalSpecificBlackboardData = nullptr, EActorBlackboardSearchRule SpecificBlackboardSearchRule = EActorBlackboardSearchRule::ActorAndControllerAndGameState);
+	AIFLOW_API bool IsValid() const;
+
+public:
+
+	UPROPERTY(Transient)
+	TObjectPtr<UBlackboardComponent> BlackboardComponent = nullptr;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UBlackboardData> BlackboardData = nullptr;
 };

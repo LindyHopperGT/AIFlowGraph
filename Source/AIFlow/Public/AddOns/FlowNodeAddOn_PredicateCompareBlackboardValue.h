@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AddOns/AIFlowNodeAddOn.h"
+#include "AIFlowActorBlackboardHelper.h"
 #include "Interfaces/FlowPredicateInterface.h"
 #include "Types/FlowBlackboardEntry.h"
 
@@ -13,12 +14,16 @@
 
 #include "FlowNodeAddOn_PredicateCompareBlackboardValue.generated.h"
 
+// TODO (gtaylor) Add specific actor sourcing options (data pins?) for comparing from other actors' blackboards
+
 // Forward Declarations
 class UFlowBlackboardEntryValue;
 class UBlackboardKeyType;
+struct FAIFlowCachedBlackboardReference;
 struct FBlackboardEntry;
 
 // Operator for UFlowNodeAddOn_PredicateCompareBlackboardValue's compare operation
+// TODO jserrallonga 2024-11-21: Refactor this operator type enum to exist somewhere else. 
 UENUM(BlueprintType)
 enum class EPredicateCompareOperatorType : uint8
 {
@@ -46,6 +51,29 @@ enum class EPredicateCompareOperatorType : uint8
 	ArithmeticLast = GreaterOrEqual UMETA(Hidden),
 };
 
+FORCEINLINE_DEBUGGABLE FString GetOperatorSymbolString(const EPredicateCompareOperatorType OperatorType)
+{
+	static_assert(static_cast<int32>(EPredicateCompareOperatorType::Max) == 6, TEXT("This should be kept up to date with the enum"));
+	switch(OperatorType)
+	{
+	case EPredicateCompareOperatorType::Equal:
+		return TEXT("==");
+	case EPredicateCompareOperatorType::NotEqual:
+		return TEXT("!=");
+	case EPredicateCompareOperatorType::Less:
+		return TEXT("<");
+	case EPredicateCompareOperatorType::LessOrEqual:
+		return TEXT("<=");
+	case EPredicateCompareOperatorType::Greater:
+		return TEXT(">");
+	case EPredicateCompareOperatorType::GreaterOrEqual:
+		return TEXT(">=");
+	default:
+		return TEXT("[Invalid Operator]");
+	}
+}
+
+
 UCLASS(MinimalApi, NotBlueprintable, meta = (DisplayName = "Compare Blackboard Value"))
 class UFlowNodeAddOn_PredicateCompareBlackboardValue
 	: public UAIFlowNodeAddOn
@@ -65,25 +93,28 @@ public:
 	// UObject
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 	// --
-#endif // WITH_EDITOR
 
 	// UFlowNodeBase
-#if WITH_EDITOR
 	virtual FText GetNodeTitle() const override;
-#endif // WITH_EDITOR
 	// --
+
+	// IFlowBlackboardAssetProvider
+	virtual UBlackboardData* GetBlackboardAssetForPropertyHandle(const TSharedPtr<IPropertyHandle>& PropertyHandle) const override;
+	// --
+#endif // WITH_EDITOR
 
 protected:
 #if WITH_EDITOR
 	bool TryRefreshIsKeyLeftSelected();
-	bool TryRefreshKeyEntriesAndExplicitValues();
+	bool TryRefreshKeyEntriesAndExplicitValues(const UBlackboardData& BlackboardData);
 
-	bool TryRefreshSelectedKeyType(bool bEnableKeyEntry, FFlowBlackboardEntry& InOutKeyProperty);
-	bool TryRefreshExplicitValue(bool bEnableExplicitValue, TObjectPtr<UFlowBlackboardEntryValue>& InOutExplicitValue);
+	bool TryRefreshSelectedKeyType(const UBlackboardData& BlackboardData, bool bEnableKeyEntry, FFlowBlackboardEntry& InOutKeyProperty);
+	bool TryRefreshExplicitValue(const UBlackboardData& BlackboardData, bool bEnableExplicitValue, TObjectPtr<UFlowBlackboardEntryValue>& InOutExplicitValue);
 
-	TSubclassOf<UBlackboardKeyType> TryGetKeyTypeClass() const;
-	UBlackboardKeyType const* TryGetKeyType() const;
+	TSubclassOf<UBlackboardKeyType> TryGetKeyTypeClass(const UBlackboardData& BlackboardData) const;
+	UBlackboardKeyType const* TryGetKeyType(const UBlackboardData& BlackboardData) const;
 
+	UBlackboardData* GetBlackboardAssetForEditor() const;
 #endif // WITH_EDITOR
 
 	bool TryGetBlackboardKeyInfo(
@@ -94,10 +125,12 @@ protected:
 		bool bWarnIfMissing) const;
 
 	bool ComputeCompareResultWithExplicitValue(
+		const UBlackboardComponent& BlackboardComponent,
 		const TSubclassOf<UBlackboardKeyType> KeyType,
 		const FBlackboard::FKey LeftKeyID,
 		const UFlowBlackboardEntryValue& RightExplicitValue) const;
 	bool ComputeCompareResult(
+		const UBlackboardComponent& BlackboardComponent,
 		const TSubclassOf<UBlackboardKeyType> KeyType,
 		const FBlackboard::FKey LeftKeyID,
 		const FBlackboard::FKey RightKeyID) const;
@@ -116,8 +149,6 @@ protected:
 			Operation <= EPredicateCompareOperatorType::ArithmeticLast;
 	}
 
-	static FString GetOperatorSymbolString(EPredicateCompareOperatorType OperatorType);
-
 	static EArithmeticKeyOperation::Type ConvertPredicateCompareOperatorTypeToArithmeticKeyOperation(EPredicateCompareOperatorType OperatorType);
 
 protected:
@@ -133,12 +164,20 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Configuration, DisplayName = "Operator", meta = (EditCondition = "bIsKeyLeftSelected && bIsKeyLeftSelected"))
 	EPredicateCompareOperatorType OperatorType = EPredicateCompareOperatorType::Equal;
 
+	// Search rule to use to find the "Specific Blackboard" (if specified)
+	UPROPERTY(EditAnywhere, Category = Configuration, AdvancedDisplay, DisplayName = "Specific Blackboard Search Rule", meta = (EditCondition = "SpecificBlackboardAsset", DisplayAfter = SpecificBlackboardAsset))
+	EActorBlackboardSearchRule SpecificBlackboardSearchRule = EActorBlackboardSearchRule::ActorAndControllerAndGameState;
+
 	// Blackboard key for the Gameplay Tag or Tag Container to test with the Query
 	UPROPERTY(EditAnywhere, Category = Configuration, DisplayName = "Key (right)", meta = (EditCondition = "!bUseExplicitValueForRightHandSide && bIsKeyLeftSelected == true"))
 	FFlowBlackboardEntry KeyRight;
 
 	UPROPERTY(EditAnywhere, Instanced, Category = Configuration, DisplayName = "Explicit Value (right)", meta = (EditCondition = "bUseExplicitValueForRightHandSide && bIsKeyLeftSelected"))
 	TObjectPtr<UFlowBlackboardEntryValue> ExplicitValueRight = nullptr;
+
+	// Specific blackboard to use for the comparison
+	UPROPERTY(EditAnywhere, Category = Configuration, AdvancedDisplay, DisplayName = "Specific Blackboard")
+	TObjectPtr<UBlackboardData> SpecificBlackboardAsset = nullptr;
 
 #if WITH_EDITORONLY_DATA
 	UPROPERTY(EditAnywhere, Category = Configuration, meta = (EditCondition = "bIsKeyLeftSelected && bIsKeyLeftSelected"))

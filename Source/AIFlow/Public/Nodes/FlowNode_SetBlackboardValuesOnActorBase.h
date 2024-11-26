@@ -26,15 +26,7 @@ protected:
 
 protected:
 
-	// Specify an explicit blackboard asset to write to
-	UPROPERTY(EditAnywhere, Category = Configuration, DisplayName = "Expected Blackboard Asset for Actor", meta = (DisplayOrder = 2))
-	UBlackboardData* ExpectedBlackboardData = nullptr;
-
-	// Where to search for the blackboard component: on the Actor, their Controller (for Pawns) or both.
-	UPROPERTY(EditAnywhere, Category = Configuration, DisplayName = "Blackboard Component Search Rule", meta = (DisplayOrder = 2))
-	EActorBlackboardSearchRule SearchRule = EActorBlackboardSearchRule::ActorAndController;
-
 	// TODO (gtaylor) Implement blackboard injection if missing feature
-	UPROPERTY(VisibleAnywhere, Category = Configuration, DisplayName = "Blackboard Injection Rule", meta = (DisplayOrder = 2))
+	UPROPERTY(VisibleAnywhere, Category = Configuration, DisplayName = "Blackboard Injection Rule", meta = (DisplayOrder = 3))
 	EActorBlackboardInjectRule InjectRule = EActorBlackboardInjectRule::DoNotInjectIfMissing;
 };

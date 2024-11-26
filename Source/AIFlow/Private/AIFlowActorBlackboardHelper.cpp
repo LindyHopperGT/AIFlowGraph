@@ -5,45 +5,49 @@
 #include "AIFlowLogChannels.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Blackboard/FlowBlackboardEntryValue.h"
-#include "GameFramework/Controller.h"
-#include "GameFramework/Pawn.h"
 #include "Types/FlowArray.h"
+#include "Types/FlowInjectComponentsManager.h"
+#include "Types/FlowInjectComponentsHelper.h"
+#include "Engine/World.h"
+#include "GameFramework/Controller.h"
+#include "GameFramework/GameState.h"
+#include "GameFramework/Pawn.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(AIFlowActorBlackboardHelper)
 
 UBlackboardComponent* FAIFlowActorBlackboardHelper::FindOrAddBlackboardComponentOnActor(
 	AActor& Actor,
+	UFlowInjectComponentsManager* InjectComponentsManager,
+	TSubclassOf<UBlackboardComponent> BlackboardComponentClass,
 	UBlackboardData* OptionalBlackboardData,
 	EActorBlackboardSearchRule SearchRule,
 	EActorBlackboardInjectRule InjectRule)
 {
-	static_assert(static_cast<__underlying_type(EActorBlackboardSearchRule)>(EActorBlackboardSearchRule::Max) == 3, "This code may need updating if the enum values change");
-	const bool bCanSearchActor =
-		SearchRule == EActorBlackboardSearchRule::ActorAndController ||
-		SearchRule == EActorBlackboardSearchRule::ActorOnly;
+	FLOW_ASSERT_ENUM_MAX(EActorBlackboardSearchRule, 5);
 
-	const bool bCanSearchAIController =
-		SearchRule == EActorBlackboardSearchRule::ActorAndController ||
-		SearchRule == EActorBlackboardSearchRule::ControllerOnly;
+	UBlackboardComponent* FoundBlackboardComponent = TryFindBlackboardComponent(*Actor.GetWorld(), SearchRule, &Actor, OptionalBlackboardData);
 
-	UBlackboardComponent* FoundBlackboardComponent = nullptr;
-
-	if (bCanSearchActor)
+	if (EActorBlackboardInjectRule_Classifiers::NeedsInjectComponentsManager(InjectRule))
 	{
-		FoundBlackboardComponent = UAIFlowAsset::TryFindBlackboardComponentOnActor(Actor, OptionalBlackboardData);
-	}
-
-	AController* Controller = nullptr;
-
-	if (bCanSearchAIController && !FoundBlackboardComponent)
-	{
-		if (APawn* Pawn = Cast<APawn>(&Actor))
+		if (!IsValid(OptionalBlackboardData))
 		{
-			Controller = Pawn->GetController();
-			if (IsValid(Controller))
-			{
-				FoundBlackboardComponent = UAIFlowAsset::TryFindBlackboardComponentOnActor(Actor, OptionalBlackboardData);
-			}
+			UE_LOG(LogAIFlow, Error, TEXT("Must specify OptionalBlackboardData if injecting missing a blackboard.  Without it, we don't know what blackboard data to use for the injected component!"));
+
+			return nullptr;
+		}
+
+		if (!IsValid(InjectComponentsManager))
+		{
+			UE_LOG(LogAIFlow, Error, TEXT("Must provide an InjectComponentsManager if injecting missing a blackboard."));
+
+			return nullptr;
+		}
+
+		if (!IsValid(BlackboardComponentClass))
+		{
+			UE_LOG(LogAIFlow, Error, TEXT("Must provide an BlackboardComponentClass if injecting missing a blackboard."));
+
+			return nullptr;
 		}
 	}
 
@@ -54,29 +58,41 @@ UBlackboardComponent* FAIFlowActorBlackboardHelper::FindOrAddBlackboardComponent
 		{
 		case EActorBlackboardInjectRule::InjectOntoActorIfMissing:
 			{
-				if (!IsValid(OptionalBlackboardData))
+				const FName InstanceBaseName = BlackboardComponentClass->GetFName();
+				FoundBlackboardComponent = Cast<UBlackboardComponent>(FFlowInjectComponentsHelper::TryCreateComponentInstanceForActorFromClass(Actor, BlackboardComponentClass, InstanceBaseName));
+
+				if (IsValid(FoundBlackboardComponent))
 				{
-					UE_LOG(LogAIFlow, Error, TEXT("Must specify OptionalBlackboardData if injecting missing a blackboard.  Without it, we don't know what blackboard data to use for the injected component!"));
-
-					break;
+					FoundBlackboardComponent->InitializeBlackboard(*OptionalBlackboardData);
 				}
-
-				// TODO (gtaylor) Not yet implemented (this enum value should not be selectable yet).
-				checkNoEntry();
 			}
 			break;
 
 		case EActorBlackboardInjectRule::InjectOntoControllerIfMissing:
 			{
-				if (!IsValid(OptionalBlackboardData))
+				APawn* ActorAsPawn = Cast<APawn>(&Actor);
+				if (!ActorAsPawn)
 				{
-					UE_LOG(LogAIFlow, Error, TEXT("Must specify OptionalBlackboardData if injecting missing a blackboard.  Without it, we don't know what blackboard data to use for the injected component!"));
+					UE_LOG(LogAIFlow, Error, TEXT("Cannot Inject missing blackboard onto Controller for a non-Pawn Actor."));
 
 					break;
 				}
 
-				// TODO (gtaylor) Not yet implemented (this enum value should not be selectable yet).
-				checkNoEntry();
+				AController* Controller = ActorAsPawn->GetController();
+				if (!IsValid(Controller))
+				{
+					UE_LOG(LogAIFlow, Error, TEXT("Cannot Inject missing blackboard onto Controller, for a Pawn without a Controller."));
+
+					break;
+				}
+
+				const FName InstanceBaseName = BlackboardComponentClass->GetFName();
+				FoundBlackboardComponent = Cast<UBlackboardComponent>(FFlowInjectComponentsHelper::TryCreateComponentInstanceForActorFromClass(*Controller, BlackboardComponentClass, InstanceBaseName));
+
+				if (IsValid(FoundBlackboardComponent))
+				{
+					FoundBlackboardComponent->InitializeBlackboard(*OptionalBlackboardData);
+				}
 			}
 			break;
 
@@ -88,6 +104,60 @@ UBlackboardComponent* FAIFlowActorBlackboardHelper::FindOrAddBlackboardComponent
 	}
 
 	return FoundBlackboardComponent;
+}
+
+UBlackboardComponent* FAIFlowActorBlackboardHelper::TryFindBlackboardComponent(UWorld& World, EActorBlackboardSearchRule SearchRule, AActor* OptionalActor, UBlackboardData* OptionalBlackboardData)
+{
+	UBlackboardComponent* FoundBlackboardComponent = nullptr;
+
+	if (IsValid(OptionalActor))
+	{
+		const bool bCanSearchActor = EActorBlackboardSearchRule_Classifiers::CanSearchActor(SearchRule);
+		if (bCanSearchActor)
+		{
+			FoundBlackboardComponent = UAIFlowAsset::TryFindBlackboardComponentOnActor(*OptionalActor, OptionalBlackboardData);
+
+			if (IsValid(FoundBlackboardComponent))
+			{
+				return FoundBlackboardComponent;
+			}
+		}
+
+		const bool bCanSearchAIController = EActorBlackboardSearchRule_Classifiers::CanSearchController(SearchRule);
+		if (bCanSearchAIController)
+		{
+			if (APawn* Pawn = Cast<APawn>(OptionalActor))
+			{
+				AController* Controller = Pawn->GetController();
+				if (IsValid(Controller))
+				{
+					FoundBlackboardComponent = UAIFlowAsset::TryFindBlackboardComponentOnActor(*OptionalActor, OptionalBlackboardData);
+
+					if (IsValid(FoundBlackboardComponent))
+					{
+						return FoundBlackboardComponent;
+					}
+				}
+			}
+		}
+	}
+
+	const bool bCanSearchGameState = EActorBlackboardSearchRule_Classifiers::CanSearchGameState(SearchRule);
+	if (bCanSearchGameState)
+	{
+		AGameStateBase* GameState = World.GetGameState();
+		if (IsValid(GameState))
+		{
+			FoundBlackboardComponent = UAIFlowAsset::TryFindBlackboardComponentOnActor(*GameState, OptionalBlackboardData);
+
+			if (IsValid(FoundBlackboardComponent))
+			{
+				return FoundBlackboardComponent;
+			}
+		}
+	}
+
+	return nullptr;
 }
 
 void FAIFlowActorBlackboardHelper::ApplyBlackboardEntries(UBlackboardComponent& BlackboardComponent, const TArray<UFlowBlackboardEntryValue*>& EntriesToApply)
@@ -127,6 +197,8 @@ void FAIFlowActorBlackboardHelper::ApplyBlackboardOptionsToBlackboardComponent(
 
 TArray<UBlackboardComponent*> FAIFlowActorBlackboardHelper::FindOrAddBlackboardComponentOnActors(
 	const TArray<AActor*>& Actors,
+	UFlowInjectComponentsManager* InjectComponentsManager,
+	TSubclassOf<UBlackboardComponent> BlackboardComponentClass,
 	UBlackboardData* OptionalBlackboardData,
 	EActorBlackboardSearchRule SearchRule,
 	EActorBlackboardInjectRule InjectRule)
@@ -147,6 +219,8 @@ TArray<UBlackboardComponent*> FAIFlowActorBlackboardHelper::FindOrAddBlackboardC
 		UBlackboardComponent* FoundBlackboardComponent =
 			FindOrAddBlackboardComponentOnActor(
 				*Actor,
+				InjectComponentsManager,
+				BlackboardComponentClass,
 				OptionalBlackboardData,
 				SearchRule,
 				InjectRule);
@@ -250,3 +324,62 @@ void FAIFlowActorBlackboardHelper::AppendBlackboardOptions(
 	}
 }
 #endif // WITH_EDITOR
+
+// FAIFlowCachedBlackboardReference ---
+
+bool FAIFlowCachedBlackboardReference::TryCacheBlackboardReference(const UFlowNodeBase& FlowNodeBase, UBlackboardData* OptionalSpecificBlackboardData, EActorBlackboardSearchRule SpecificBlackboardSearchRule)
+{
+	if (::IsValid(OptionalSpecificBlackboardData))
+	{
+		// Try to find a specific blackboard that isn't the default blackboard for this FlowAsset
+		AActor* OwnerActor = FlowNodeBase.TryGetRootFlowActorOwner();
+		if (!::IsValid(OwnerActor))
+		{
+			return false;
+		}
+
+		constexpr UFlowInjectComponentsManager* InjectComponentsManager = nullptr;
+
+		UBlackboardComponent* FoundBlackboardComponent =
+			FAIFlowActorBlackboardHelper::FindOrAddBlackboardComponentOnActor(
+				*OwnerActor,
+				InjectComponentsManager,
+				UBlackboardComponent::StaticClass(),
+				OptionalSpecificBlackboardData,
+				SpecificBlackboardSearchRule,
+				EActorBlackboardInjectRule::DoNotInjectIfMissing);
+
+		if (!::IsValid(FoundBlackboardComponent))
+		{
+			return false;
+		}
+
+		BlackboardComponent = FoundBlackboardComponent;
+		BlackboardData = FoundBlackboardComponent->GetBlackboardAsset();
+
+		return true;
+	}
+
+	// Use the default blackboard for this flow node
+	const IFlowBlackboardInterface* FlowBlackboardInterface = Cast<IFlowBlackboardInterface>(&FlowNodeBase);
+	if (!FlowBlackboardInterface)
+	{
+		return false;
+	}
+
+	UBlackboardComponent* FoundBlackboardComponent = FlowBlackboardInterface->GetBlackboardComponent();
+	if (!::IsValid(FoundBlackboardComponent))
+	{
+		return false;
+	}
+
+	BlackboardComponent = FoundBlackboardComponent;
+	BlackboardData = FoundBlackboardComponent->GetBlackboardAsset();
+
+	return IsValid();
+}
+
+bool FAIFlowCachedBlackboardReference::IsValid() const
+{
+	return ::IsValid(BlackboardComponent) && ::IsValid(BlackboardData);
+}

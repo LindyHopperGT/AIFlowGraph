@@ -50,6 +50,16 @@ UBlackboardComponent* UAIFlowAsset::GetBlackboardComponent() const
 	return BlackboardComponent.Get();
 }
 
+UBlackboardComponent* UAIFlowAsset::BP_TryFindBlackboardComponentOnActor(AActor* Actor, UBlackboardData* OptionalBlackboardData)
+{
+	if (IsValid(Actor))
+	{
+		return TryFindBlackboardComponentOnActor(*Actor, OptionalBlackboardData);
+	}
+
+	return nullptr;
+}
+
 UBlackboardComponent* UAIFlowAsset::TryFindBlackboardComponentOnActor(AActor& Actor, UBlackboardData* OptionalBlackboardData)
 {
 	TArray<UBlackboardComponent*> BlackboardComponents;
