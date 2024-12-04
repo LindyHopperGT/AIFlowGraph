@@ -19,7 +19,6 @@ void UFlowNodeAddOn_InjectComponents::FinishedSpawningActor_Implementation(AActo
 
 	if (IsValid(SpawnedActor))
 	{
-		check(IsValid(InjectComponentsManager));
 		const TArray<UActorComponent*> ComponentInstances = InjectComponentsHelper.CreateComponentInstancesForActor(*SpawnedActor);
 		if (!ComponentInstances.IsEmpty())
 		{
