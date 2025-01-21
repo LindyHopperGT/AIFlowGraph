@@ -27,7 +27,7 @@ class AIFLOW_API UAIFlowAsset
 public:
 
 	// UFlowAsset
-	virtual void InitializeInstance(const TWeakObjectPtr<UObject> InOwner, UFlowAsset* InTemplateAsset) override;
+	virtual void InitializeInstance(const TWeakObjectPtr<UObject> InOwner, UFlowAsset& InTemplateAsset) override;
 	virtual void DeinitializeInstance() override;
 	// --
 

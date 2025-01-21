@@ -27,6 +27,6 @@ protected:
 protected:
 
 	// TODO (gtaylor) Implement blackboard injection if missing feature
-	UPROPERTY(VisibleAnywhere, Category = Configuration, DisplayName = "Blackboard Injection Rule", meta = (DisplayOrder = 3))
+	UPROPERTY(VisibleAnywhere, Category = Configuration, DisplayName = "Blackboard Injection Rule", meta = (DisplayPriority = 3))
 	EActorBlackboardInjectRule InjectRule = EActorBlackboardInjectRule::DoNotInjectIfMissing;
 };

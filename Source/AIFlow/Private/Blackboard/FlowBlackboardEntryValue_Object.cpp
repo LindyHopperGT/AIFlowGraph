@@ -152,6 +152,33 @@ bool UFlowBlackboardEntryValue_Object::TryProvideFlowDataPinProperty(const bool 
 	return true;
 }
 
+bool UFlowBlackboardEntryValue_Object::TryProvideFlowDataPinPropertyFromBlackboardEntry(
+	const FName& BlackboardKeyName,
+	const UBlackboardKeyType& BlackboardKeyType,
+	UBlackboardComponent* OptionalBlackboardComponent,
+	TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const
+{
+	if (TryProvideFlowDataPinPropertyFromBlackboardEntryTemplate<UBlackboardKeyType_Object, FFlowDataPinOutputProperty_Object>(
+		BlackboardKeyName,
+		BlackboardKeyType,
+		OptionalBlackboardComponent,
+		OutFlowDataPinProperty))
+	{
+#if WITH_EDITOR
+		const UBlackboardKeyType_Object* TypedKeyType = CastChecked<UBlackboardKeyType_Object>(&BlackboardKeyType);
+		FFlowDataPinOutputProperty_Object* MutableProperty = OutFlowDataPinProperty.GetMutablePtr<FFlowDataPinOutputProperty_Object>();
+
+		// Only the editor data has the BaseClass or ClassFilter
+		// so we only can supply (or use) that information in editor builds
+		MutableProperty->ClassFilter = TypedKeyType->BaseClass;
+#endif // WITH_EDITOR
+
+		return true;
+	}
+
+	return false;
+}
+
 UObject* UFlowBlackboardEntryValue_Object::GetObjectValue() const
 {
 	return ObjectAsset ? ObjectAsset : ObjectInstance;

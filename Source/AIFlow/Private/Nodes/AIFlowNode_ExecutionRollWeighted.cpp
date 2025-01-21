@@ -15,7 +15,7 @@ UAIFlowNode_ExecutionRollWeighted::UAIFlowNode_ExecutionRollWeighted(const FObje
 {
 #if WITH_EDITOR
 	NodeDisplayStyle = FlowNodeStyle::Default;
-	Category = TEXT("Route");
+	Category = TEXT("Flow|Routing");
 #endif
 
 	OutputPins.Empty();

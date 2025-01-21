@@ -173,6 +173,75 @@ bool UFlowBlackboardEntryValue_Enum::TryProvideFlowDataPinProperty(const bool bI
 	return true;
 }
 
+bool UFlowBlackboardEntryValue_Enum::TryProvideFlowDataPinPropertyFromBlackboardEntry(
+	const FName& BlackboardKeyName,
+	const UBlackboardKeyType& BlackboardKeyType,
+	UBlackboardComponent* OptionalBlackboardComponent,
+	TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const
+{
+	if (BlackboardKeyType.IsA<UBlackboardKeyType_Enum>())
+	{
+		const UBlackboardKeyType_Enum* TypedKeyType = CastChecked<UBlackboardKeyType_Enum>(&BlackboardKeyType);
+
+		const UBlackboardKeyType_Enum::FDataType IntValue =
+			OptionalBlackboardComponent ?
+				OptionalBlackboardComponent->GetValue<UBlackboardKeyType_Enum>(BlackboardKeyName) :
+				UBlackboardKeyType_Enum::InvalidValue;
+
+		UEnum* EnumClass = TypedKeyType->EnumType;
+
+		const int32 EnumValueIndex = EnumClass->GetIndexByValue(IntValue);
+		const FName EnumValueName = FName(EnumClass->GetDisplayNameTextByIndex(EnumValueIndex).ToString());
+
+		OutFlowDataPinProperty.InitializeAs<FFlowDataPinOutputProperty_Enum>(EnumValueName, EnumClass);
+
+		FFlowDataPinOutputProperty_Enum* MutableProperty = OutFlowDataPinProperty.GetMutablePtr<FFlowDataPinOutputProperty_Enum>();
+		MutableProperty->EnumClass = TypedKeyType->EnumType;
+
+		return true;
+	}
+
+	return false;
+}
+
+FFlowDataPinResult_Enum UFlowBlackboardEntryValue_Enum::TryBuildDataPinResultFromBlackboardEnumEntry(const FName& KeyName, const UBlackboardComponent& BlackboardComponent)
+{
+	const uint8 EnumValueAsInt = BlackboardComponent.GetValueAsEnum(KeyName);
+	const UBlackboardData* BlackboardAsset = BlackboardComponent.GetBlackboardAsset();
+	if (!IsValid(BlackboardAsset))
+	{
+		UE_LOG(LogAIFlow, Error, TEXT("Missing a blackboard asset!"));
+		return FFlowDataPinResult_Enum(EFlowDataPinResolveResult::FailedWithError);
+	}
+
+	const FBlackboard::FKey BlackboardEntryKeyID = BlackboardAsset->GetKeyID(KeyName);
+	if (BlackboardEntryKeyID == FBlackboard::InvalidKey)
+	{
+		UE_LOG(LogAIFlow, Error, TEXT("Cannot find key %s on blackboard %s!"), *KeyName.ToString(), *BlackboardAsset->GetName());
+		return FFlowDataPinResult_Enum(EFlowDataPinResolveResult::FailedWithError);
+	}
+
+	const FBlackboardEntry* BlackboardEntry = BlackboardAsset->GetKey(BlackboardEntryKeyID);
+	check(BlackboardEntry);
+
+	const UBlackboardKeyType_Enum* BlackboardEnumKeyType = Cast<UBlackboardKeyType_Enum>(BlackboardEntry->KeyType);
+	if (!IsValid(BlackboardEnumKeyType))
+	{
+		UE_LOG(LogAIFlow, Error, TEXT("Key %s on blackboard %s, is not an enum type!"), *KeyName.ToString(), *BlackboardAsset->GetName());
+		return FFlowDataPinResult_Enum(EFlowDataPinResolveResult::FailedWithError);
+	}
+
+	UEnum* EnumType = Cast<UEnum>(BlackboardEnumKeyType->EnumType);
+	if (!IsValid(EnumType))
+	{
+		UE_LOG(LogAIFlow, Error, TEXT("Key %s on blackboard %s, refers to an invalid EnumType class!"), *KeyName.ToString(), *BlackboardAsset->GetName());
+		return FFlowDataPinResult_Enum(EFlowDataPinResolveResult::FailedWithError);
+	}
+
+	FFlowDataPinResult_Enum EnumResult = FFlowDataPinResult_Enum(EnumValueAsInt, *EnumType);
+	return EnumResult;
+}
+
 void UFlowBlackboardEntryValue_Enum::SetOnBlackboardComponent(UBlackboardComponent* BlackboardComponent) const
 {
 	if (IsValid(BlackboardComponent))

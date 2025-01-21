@@ -14,7 +14,7 @@ UAIFlowNode_ExecutionRollGuaranteed::UAIFlowNode_ExecutionRollGuaranteed(const F
 {
 #if WITH_EDITOR
 	NodeDisplayStyle = FlowNodeStyle::Default;
-	Category = TEXT("Route");
+	Category = TEXT("Flow|Routing");
 #endif
 
 	FString ResetPinTooltip = TEXT("Finish work of this node.");

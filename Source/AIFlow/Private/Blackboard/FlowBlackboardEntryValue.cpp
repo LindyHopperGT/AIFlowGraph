@@ -5,6 +5,8 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(FlowBlackboardEntryValue)
 
+TArray<TWeakObjectPtr<UClass>> UFlowBlackboardEntryValue::CachedBlackboardEntryValueSubclassArray;
+
 UBlackboardData* UFlowBlackboardEntryValue::GetBlackboardAsset() const
 {
 	if (IFlowBlackboardAssetProvider* OuterProvider = Cast<IFlowBlackboardAssetProvider>(GetOuter()))
@@ -13,6 +15,24 @@ UBlackboardData* UFlowBlackboardEntryValue::GetBlackboardAsset() const
 	}
 
 	return nullptr;
+}
+
+const TArray<TWeakObjectPtr<UClass>>& UFlowBlackboardEntryValue::EnsureBlackboardEntryValueSubclassArray()
+{
+	// NOTE (gtaylor) Potentially vulnerable to modules loading in subclasses after this initial caching
+
+	if (CachedBlackboardEntryValueSubclassArray.IsEmpty())
+	{
+		TArray<UClass*> Subclasses;
+		GetDerivedClasses(UFlowBlackboardEntryValue::StaticClass(), Subclasses);
+
+		for (UClass* Subclass : Subclasses)
+		{
+			CachedBlackboardEntryValueSubclassArray.Add(Subclass);
+		}
+	}
+
+	return CachedBlackboardEntryValueSubclassArray;
 }
 
 #if WITH_EDITOR

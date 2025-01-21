@@ -7,6 +7,9 @@
 
 #include "FlowBlackboardEntryValue_Enum.generated.h"
 
+struct FFlowDataPinResult_Enum;
+class UBlackboardComponent;
+
 /**
  * Configuration object class for setting blackboard entries for UBlackboardKeyType_Enum
  */
@@ -33,6 +36,14 @@ public:
 	// IFlowDataPinPropertyProviderInterface
 	virtual bool TryProvideFlowDataPinProperty(const bool bIsInputPin, TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const override;
 	// --
+
+	virtual bool TryProvideFlowDataPinPropertyFromBlackboardEntry(
+		const FName& BlackboardKeyName,
+		const UBlackboardKeyType& BlackboardKeyType,
+		UBlackboardComponent* OptionalBlackboardComponent,
+		TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const override;
+
+	static FFlowDataPinResult_Enum TryBuildDataPinResultFromBlackboardEnumEntry(const FName& KeyName, const UBlackboardComponent& BlackboardComponent);
 
 #if WITH_EDITOR
 public:

@@ -4,6 +4,7 @@
 
 #include "Templates/SubclassOf.h"
 #include "Types/FlowEnumUtils.h"
+#include "InstancedStruct.h"
 
 #include "AIFlowActorBlackboardHelper.generated.h"
 
@@ -15,6 +16,10 @@ class UBlackboardData;
 class UFlowBlackboardEntryValue;
 class UFlowNodeBase;
 class UFlowInjectComponentsManager;
+struct FFlowBlackboardEntry;
+struct FFlowDataPinProperty;
+class UBlackboardKeyType;
+struct FFlowDataPinProperty;
 
 // Rule enum for injecting missing blackboards on Actors
 UENUM()
@@ -147,11 +152,22 @@ public:
 	// Try to find the blackboard on either the Actor, their Controller or the GameState, as directed by the supplied parameters
 	static UBlackboardComponent* TryFindBlackboardComponent(UWorld& World, EActorBlackboardSearchRule SearchRule, AActor* OptionalActor, UBlackboardData* OptionalBlackboardData);
 
+	AIFLOW_API static bool TryProvideFlowDataPinPropertyFromBlackboardEntry(
+		const FName& BlackboardKeyName,
+		const UBlackboardKeyType* BlackboardKeyType,
+		UBlackboardComponent* OptionalBlackboardComponent,
+		TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty);
+
 #if WITH_EDITOR
 	// Helper function to append text for Flow Node/AddOn Configuration display
 	AIFLOW_API static void AppendBlackboardOptions(
-		const TArray<FAIFlowConfigureBlackboardOption> PerActorOptions,
+		const TArray<FAIFlowConfigureBlackboardOption>& PerActorOptions,
 		FTextBuilder& InOutTextBuilder);
+
+	AIFLOW_API static void AppendBlackboardKeys(
+		const TArray<FFlowBlackboardEntry>& BlackboardEntries,
+		FTextBuilder& InOutTextBuilder);
+
 #endif // WITH_EDITOR
 
 protected:

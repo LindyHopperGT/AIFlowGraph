@@ -32,6 +32,12 @@ public:
 	virtual bool TryProvideFlowDataPinProperty(const bool bIsInputPin, TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const override;
 	// --
 
+	virtual bool TryProvideFlowDataPinPropertyFromBlackboardEntry(
+		const FName& BlackboardKeyName,
+		const UBlackboardKeyType& BlackboardKeyType,
+		UBlackboardComponent* OptionalBlackboardComponent,
+		TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const override;
+
 #if WITH_EDITOR
 public:
 	//~Begin UFlowNodeBase

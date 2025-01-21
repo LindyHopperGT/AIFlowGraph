@@ -44,6 +44,6 @@ protected:
 
 	// BlackboardKey (in this flow graph's blackboard) 
 	// to source the Actors to Set Blackboard Values On (on their blackboards)
-	UPROPERTY(EditAnywhere, Category = Configuration, DisplayName = "Key for Actor to Set Blackboard Values On", meta = (DisplayOrder = 1))
+	UPROPERTY(EditAnywhere, Category = Configuration, DisplayName = "Key for Actor to Set Blackboard Values On", meta = (DisplayPriority = 1))
 	FFlowBlackboardEntry BlackboardActorKey;
 };

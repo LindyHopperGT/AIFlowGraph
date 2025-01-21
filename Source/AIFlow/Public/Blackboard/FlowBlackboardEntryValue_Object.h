@@ -40,6 +40,12 @@ public:
 	virtual bool TryProvideFlowDataPinProperty(const bool bIsInputPin, TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const override;
 	// --
 
+	virtual bool TryProvideFlowDataPinPropertyFromBlackboardEntry(
+		const FName& BlackboardKeyName,
+		const UBlackboardKeyType& BlackboardKeyType,
+		UBlackboardComponent* OptionalBlackboardComponent,
+		TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const override;
+
 	UObject* GetObjectValue() const;
 	void SetObjectValue(UObject* InValue);
 

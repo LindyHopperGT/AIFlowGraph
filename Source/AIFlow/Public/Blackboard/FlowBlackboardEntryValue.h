@@ -7,6 +7,8 @@
 #include "Interfaces/FlowBlackboardAssetProvider.h"
 #include "Templates/SubclassOf.h"
 #include "UObject/Object.h"
+#include "BehaviorTree/Blackboard/BlackboardKeyType.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
 #include "Types/FlowBlackboardEntry.h"
 
@@ -95,11 +97,49 @@ public:
 	virtual bool TryProvideFlowDataPinProperty(const bool bIsInputPin, TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const { return false; }
 	// --
 
+	// Try to provide a blackboard entry value for a key, if the type is supported by this class, in the form of a FFlowDataPinProperty
+	virtual bool TryProvideFlowDataPinPropertyFromBlackboardEntry(
+		const FName& BlackboardKeyName,
+		const UBlackboardKeyType& BlackboardKeyType,
+		UBlackboardComponent* OptionalBlackboardComponent,
+		TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const PURE_VIRTUAL(TryProvideFlowDataPinPropertyFromBlackboardEntry, return false;);
+
+	// Ensures the CachedBlackboardEntryValueSubclassArray has been cached and returns its value
+	static const TArray<TWeakObjectPtr<UClass>>& EnsureBlackboardEntryValueSubclassArray();
+
+protected:
+
+	// Template worker function for TryProvideFlowDataPinPropertyFromBlackboardEntry()
+	template <typename TBlackboardEntryType, typename TFlowDataPinOutputPropertyType>
+	static bool TryProvideFlowDataPinPropertyFromBlackboardEntryTemplate(
+		const FName& BlackboardKeyName,
+		const UBlackboardKeyType& BlackboardKeyType,
+		UBlackboardComponent* OptionalBlackboardComponent,
+		TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty)
+	{
+		if (BlackboardKeyType.IsA<TBlackboardEntryType>())
+		{
+			const typename TBlackboardEntryType::FDataType Value =
+				OptionalBlackboardComponent ?
+					OptionalBlackboardComponent->GetValue<TBlackboardEntryType>(BlackboardKeyName) :
+					TBlackboardEntryType::InvalidValue;
+
+			OutFlowDataPinProperty.InitializeAs<TFlowDataPinOutputPropertyType>(Value);
+
+			return true;
+		}
+
+		return false;
+	}
+
 public:
 
 	// Target blackboard key for this entry to set
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Configuration, meta = (EditCondition = "KeyVisibility == EFlowBlackboardEntryValueKeyVisibility::Visible", EditConditionHides))
 	FFlowBlackboardEntry Key;
+
+	// Cached array of all of the subclasses of UFlowBlackboardEntryValue
+	static TArray<TWeakObjectPtr<UClass>> CachedBlackboardEntryValueSubclassArray;
 
 #if WITH_EDITORONLY_DATA
 	// Used to control visibility of Key property

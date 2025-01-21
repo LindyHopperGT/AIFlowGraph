@@ -75,11 +75,11 @@ protected:
 protected:
 
 	// Blackboard properties to set on each actor this node is applied to
-	UPROPERTY(EditAnywhere, Category = Configuration, meta = (ShowOnlyInnerProperties, DisplayOrder = 4))
+	UPROPERTY(EditAnywhere, Category = Configuration, meta = (ShowOnlyInnerProperties, DisplayPriority = 4))
 	FAIFlowConfigureBlackboardOption EntriesForEveryActor;
 
 	// Method to use when applying the Per-Actor Options to eligible Actors
-	UPROPERTY(EditAnywhere, Category = MultipleActorConfiguration, DisplayName = "Per-Actor Options Assignment Method", meta = (DisplayOrder = 5))
+	UPROPERTY(EditAnywhere, Category = MultipleActorConfiguration, DisplayName = "Per-Actor Options Assignment Method", meta = (DisplayPriority = 5))
 	EPerActorOptionsAssignmentMethod PerActorOptionsAssignmentMethod = EPerActorOptionsAssignmentMethod::InOrderWithWrapping;
 
 	// Search rule to use to find the "Specific Blackboard" (if specified)
@@ -87,15 +87,15 @@ protected:
 	EActorBlackboardSearchRule SpecificBlackboardSearchRule = EActorBlackboardSearchRule::ActorAndControllerAndGameState;
 
 	// Configured blackboard entry option sets to apply to actors according to the application method
-	UPROPERTY(EditAnywhere, Category = MultipleActorConfiguration, DisplayName = "Per-Actor Options", meta = (DisplayOrder = 5))
+	UPROPERTY(EditAnywhere, Category = MultipleActorConfiguration, DisplayName = "Per-Actor Options", meta = (DisplayPriority = 5))
 	TArray<FAIFlowConfigureBlackboardOption> PerActorOptions;
 
 	// Helper struct that shared functionality for manipulating Actor blackboards
-	UPROPERTY(EditAnywhere, Category = Configuration, meta = (ShowOnlyInnerProperties, DisplayOrder = 5))
+	UPROPERTY(EditAnywhere, Category = Configuration, meta = (ShowOnlyInnerProperties, DisplayPriority = 5))
 	FAIFlowActorBlackboardHelper ActorBlackboardHelper;
 
 	// Specific blackboard to use (optional, defaults to the flow asset's blackboard)
-	UPROPERTY(EditAnywhere, Category = Configuration, DisplayName = "Specific Blackboard", meta = (DisplayOrder = 2))
+	UPROPERTY(EditAnywhere, Category = Configuration, DisplayName = "Specific Blackboard", meta = (DisplayPriority = 2))
 	TObjectPtr<UBlackboardData> SpecificBlackboardAsset = nullptr;
 
 	// The FFlowDataPinProperty's for this node are all Input pins

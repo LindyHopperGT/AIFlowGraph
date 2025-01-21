@@ -38,10 +38,24 @@ bool UFlowBlackboardEntryValue_Rotator::TryProvideFlowDataPinProperty(const bool
 	}
 	else
 	{
-		OutFlowDataPinProperty.InitializeAs<FFlowDataPinInputProperty_Rotator>(RotatorValue);
+		OutFlowDataPinProperty.InitializeAs<FFlowDataPinOutputProperty_Rotator>(RotatorValue);
 	}
 
 	return false;
+}
+
+bool UFlowBlackboardEntryValue_Rotator::TryProvideFlowDataPinPropertyFromBlackboardEntry(
+	const FName& BlackboardKeyName,
+	const UBlackboardKeyType& BlackboardKeyType,
+	UBlackboardComponent* OptionalBlackboardComponent,
+	TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const
+{
+	return
+		TryProvideFlowDataPinPropertyFromBlackboardEntryTemplate<UBlackboardKeyType_Rotator, FFlowDataPinOutputProperty_Rotator>(
+			BlackboardKeyName,
+			BlackboardKeyType,
+			OptionalBlackboardComponent,
+			OutFlowDataPinProperty);
 }
 
 bool UFlowBlackboardEntryValue_Rotator::TrySetValueFromInputDataPin(const FName& PinName, UFlowNode& PinOwnerFlowNode)

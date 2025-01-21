@@ -306,7 +306,7 @@ void FAIFlowActorBlackboardHelper::EnsureOrderedOptionIndices(int32 OptionNum)
 
 #if WITH_EDITOR
 void FAIFlowActorBlackboardHelper::AppendBlackboardOptions(
-	const TArray<FAIFlowConfigureBlackboardOption> PerActorOptions,
+	const TArray<FAIFlowConfigureBlackboardOption>& PerActorOptions,
 	FTextBuilder& InOutTextBuilder)
 {
 	for (int32 Index = 0; Index < PerActorOptions.Num(); ++Index)
@@ -324,6 +324,72 @@ void FAIFlowActorBlackboardHelper::AppendBlackboardOptions(
 	}
 }
 #endif // WITH_EDITOR
+
+bool FAIFlowActorBlackboardHelper::TryProvideFlowDataPinPropertyFromBlackboardEntry(
+	const FName& BlackboardKeyName,
+	const UBlackboardKeyType* BlackboardKeyType,
+	UBlackboardComponent* OptionalBlackboardComponent,
+	TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty)
+{
+	if (!BlackboardKeyType)
+	{
+		return false;
+	}
+
+	FBlackboard::FKey BlackboardKeyID = FBlackboard::InvalidKey;
+
+	if (IsValid(OptionalBlackboardComponent))
+	{
+		BlackboardKeyID = OptionalBlackboardComponent->GetKeyID(BlackboardKeyName);
+
+		if (BlackboardKeyID == FBlackboard::InvalidKey)
+		{
+			return false;
+		}
+
+		const TSubclassOf<UBlackboardKeyType> FoundKeyType = OptionalBlackboardComponent->GetKeyType(BlackboardKeyID);
+		if (!BlackboardKeyType->IsA(FoundKeyType))
+		{
+			UE_LOG(
+				LogAIFlow,
+				Error,
+				TEXT("Blackboard key %s, key type %s, is not the desired key type %s, on blackboard %s."),
+				*BlackboardKeyName.ToString(),
+				*FoundKeyType->GetName(),
+				*BlackboardKeyType->GetName(),
+				*OptionalBlackboardComponent->GetName());
+
+			return false;
+		}
+	}
+
+	// TODO (gtaylor) Ideally, we optimize this lookup at some point, perhaps with a map?
+
+	// Slow lookup through all of the subclasses until we find one that can do the conversion.
+	const TArray<TWeakObjectPtr<UClass>> Subclasses = UFlowBlackboardEntryValue::EnsureBlackboardEntryValueSubclassArray();
+
+	for (TWeakObjectPtr<UClass> SubclassPtr : Subclasses)
+	{
+		UClass* Subclass = SubclassPtr.Get();
+		if (!IsValid(Subclass))
+		{
+			continue;
+		}
+
+		const UFlowBlackboardEntryValue* TypedSubclassCDO = Cast<UFlowBlackboardEntryValue>(Subclass->GetDefaultObject());
+
+		if (TypedSubclassCDO->TryProvideFlowDataPinPropertyFromBlackboardEntry(
+			BlackboardKeyName,
+			*BlackboardKeyType,
+			OptionalBlackboardComponent,
+			OutFlowDataPinProperty))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
 
 // FAIFlowCachedBlackboardReference ---
 

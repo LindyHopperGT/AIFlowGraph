@@ -49,6 +49,20 @@ bool UFlowBlackboardEntryValue_Bool::TryProvideFlowDataPinProperty(const bool bI
 	return true;
 }
 
+bool UFlowBlackboardEntryValue_Bool::TryProvideFlowDataPinPropertyFromBlackboardEntry(
+	const FName& BlackboardKeyName,
+	const UBlackboardKeyType& BlackboardKeyType,
+	UBlackboardComponent* OptionalBlackboardComponent,
+	TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const
+{
+	return
+		TryProvideFlowDataPinPropertyFromBlackboardEntryTemplate<UBlackboardKeyType_Bool, FFlowDataPinOutputProperty_Bool>(
+			BlackboardKeyName,
+			BlackboardKeyType,
+			OptionalBlackboardComponent,
+			OutFlowDataPinProperty);
+}
+
 bool UFlowBlackboardEntryValue_Bool::TrySetValueFromInputDataPin(const FName& PinName, UFlowNode& PinOwnerFlowNode)
 {
 	const FFlowDataPinResult_Bool FlowDataPinResult = PinOwnerFlowNode.TryResolveDataPinAsBool(PinName);

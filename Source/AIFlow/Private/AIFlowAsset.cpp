@@ -18,7 +18,7 @@ UAIFlowAsset::UAIFlowAsset(const FObjectInitializer& ObjectInitializer)
 	BlackboardComponentClass = UBlackboardComponent::StaticClass();
 }
 
-void UAIFlowAsset::InitializeInstance(const TWeakObjectPtr<UObject> InOwner, UFlowAsset* InTemplateAsset)
+void UAIFlowAsset::InitializeInstance(const TWeakObjectPtr<UObject> InOwner, UFlowAsset& InTemplateAsset)
 {
 	Super::InitializeInstance(InOwner, InTemplateAsset);
 
