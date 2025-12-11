@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Nodes/FlowNode.h"
+#include "AIFlowNode.h"
 #include "AIFlowNode_ExecutionRollWeighted.generated.h"
 
 USTRUCT(BlueprintType, meta = (ShowOnlyInnerProperties))
@@ -28,31 +28,35 @@ public:
  * Executes a weighted roll
  */
 UCLASS(NotBlueprintable, meta = (DisplayName = "Roll Weighted", Keywords = "random"))
-class AIFLOW_API UAIFlowNode_ExecutionRollWeighted final : public UFlowNode
+class AIFLOW_API UAIFlowNode_ExecutionRollWeighted final : public UAIFlowNode
 {
 	GENERATED_UCLASS_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, Category = "RollWeighted")
+	UPROPERTY(EditAnywhere, Category = "RollWeighted", meta = (TitleProperty = "{OutputName} {Weight}"))
 	TArray<FAIFlowNode_RollWeightedOption> OutputPinOptions;
 
-protected:
-	virtual void ExecuteInput(const FName& PinName) override;
-
-private:
-#if WITH_EDITOR
-	virtual bool CanUserAddOutput() const override { return false; }
-	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
-	void UpdateOutputPins();
-#endif
-
-	int32 GetWeightedRandomChoice();
-	void CalculateTotalWeight();
-	
 	// Random stream to use for all random numbers
 	UPROPERTY(Transient)
 	FRandomStream RandomStream;
 	
 	UPROPERTY(Transient)
 	int32 TotalWeight = 0;
+
+public:
+	virtual void OnActivate() override;
+	virtual void ExecuteInput(const FName& PinName) override;
+
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+
+	// IFlowContextPinSupplierInterface
+	virtual bool SupportsContextPins() const override { return true; }
+	virtual TArray<FFlowPin> GetContextOutputs() const override;
+	// --
+#endif
+
+private:
+	int32 GetWeightedRandomChoice();
+	void CalculateTotalWeight();
 };

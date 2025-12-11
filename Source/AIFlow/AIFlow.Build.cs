@@ -12,7 +12,9 @@ public class AIFlow : ModuleRules
 		{
 			"AIModule",
 			"Flow",
-			"StructUtils",
+			// <RGI> #UE56Fix
+			//"StructUtils",
+			// </RGI>
 		});
 
 		PrivateDependencyModuleNames.AddRange(new[]

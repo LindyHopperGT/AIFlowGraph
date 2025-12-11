@@ -45,6 +45,13 @@ public:
 
 	TSubclassOf<UBlackboardComponent> GetBlackboardComponentClass() const { return BlackboardComponentClass; }
 
+	// Allow setting a specific RandomSeed for flownodes in this flowgraph to use
+	UFUNCTION(BlueprintCallable, Category = "AI Flow")
+	void SetRandomSeed(int32 Seed) { RandomSeed = Seed; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "AI Flow")
+	int32 GetRandomSeed() const { return RandomSeed; }
+
 protected:
 
 	virtual void CreateAndRegisterBlackboardComponent();
@@ -72,4 +79,8 @@ protected:
 	// Subclass-configurable Blackboard component class to use
 	UPROPERTY(Transient)
 	TSubclassOf<UBlackboardComponent> BlackboardComponentClass;
+
+	// Random seed for anything that requires one in this FlowAsset
+	UPROPERTY(Transient)
+	int32 RandomSeed = 0;
 };

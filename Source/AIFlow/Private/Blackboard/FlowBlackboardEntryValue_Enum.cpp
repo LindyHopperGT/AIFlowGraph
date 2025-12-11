@@ -5,7 +5,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIFlowLogChannels.h"
 #include "Nodes/FlowNode.h"
-#include "Types/FlowDataPinProperties.h"
+#include "Types/FlowDataPinValuesStandard.h"
 #include "Types/FlowDataPinResults.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(FlowBlackboardEntryValue_Enum)
@@ -159,17 +159,9 @@ void UFlowBlackboardEntryValue_Enum::EnsureValueIsCompatibleWithEnumClass()
 
 #endif // WITH_EDITOR
 
-bool UFlowBlackboardEntryValue_Enum::TryProvideFlowDataPinProperty(const bool bIsInputPin, TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const
+bool UFlowBlackboardEntryValue_Enum::TryProvideFlowDataPinProperty(TInstancedStruct<FFlowDataPinValue>& OutFlowDataPinProperty) const
 {
-	if (bIsInputPin)
-	{
-		OutFlowDataPinProperty.InitializeAs<FFlowDataPinInputProperty_Enum>(EnumValue.Value, EnumValue.EnumClass);
-	}
-	else
-	{
-		OutFlowDataPinProperty.InitializeAs<FFlowDataPinOutputProperty_Enum>(EnumValue.Value, EnumValue.EnumClass);
-	}
-
+	OutFlowDataPinProperty.InitializeAs<FFlowDataPinValue_Enum>(EnumValue.EnumClass, EnumValue.Value);
 	return true;
 }
 
@@ -177,25 +169,29 @@ bool UFlowBlackboardEntryValue_Enum::TryProvideFlowDataPinPropertyFromBlackboard
 	const FName& BlackboardKeyName,
 	const UBlackboardKeyType& BlackboardKeyType,
 	UBlackboardComponent* OptionalBlackboardComponent,
-	TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const
+	TInstancedStruct<FFlowDataPinValue>& OutFlowDataPinProperty) const
 {
 	if (BlackboardKeyType.IsA<UBlackboardKeyType_Enum>())
 	{
 		const UBlackboardKeyType_Enum* TypedKeyType = CastChecked<UBlackboardKeyType_Enum>(&BlackboardKeyType);
+
+		UEnum* EnumClass = TypedKeyType->EnumType;
+		if (!IsValid(EnumClass))
+		{
+			return false;
+		}
 
 		const UBlackboardKeyType_Enum::FDataType IntValue =
 			OptionalBlackboardComponent ?
 				OptionalBlackboardComponent->GetValue<UBlackboardKeyType_Enum>(BlackboardKeyName) :
 				UBlackboardKeyType_Enum::InvalidValue;
 
-		UEnum* EnumClass = TypedKeyType->EnumType;
-
 		const int32 EnumValueIndex = EnumClass->GetIndexByValue(IntValue);
 		const FName EnumValueName = FName(EnumClass->GetDisplayNameTextByIndex(EnumValueIndex).ToString());
 
-		OutFlowDataPinProperty.InitializeAs<FFlowDataPinOutputProperty_Enum>(EnumValueName, EnumClass);
+		OutFlowDataPinProperty.InitializeAs<FFlowDataPinValue_Enum>(EnumClass, EnumValueName);
 
-		FFlowDataPinOutputProperty_Enum* MutableProperty = OutFlowDataPinProperty.GetMutablePtr<FFlowDataPinOutputProperty_Enum>();
+		FFlowDataPinValue_Enum* MutableProperty = OutFlowDataPinProperty.GetMutablePtr<FFlowDataPinValue_Enum>();
 		MutableProperty->EnumClass = TypedKeyType->EnumType;
 
 		return true;
@@ -308,15 +304,6 @@ bool UFlowBlackboardEntryValue_Enum::TryGetNumericalValuesForArithmeticOperation
 
 bool UFlowBlackboardEntryValue_Enum::TrySetValueFromInputDataPin(const FName& PinName, UFlowNode& PinOwnerFlowNode)
 {
-	const FFlowDataPinResult_Enum FlowDataPinResult = PinOwnerFlowNode.TryResolveDataPinAsEnum(PinName);
-
-	if (FlowDataPinResult.Result == EFlowDataPinResolveResult::Success)
-	{
-		EnumValue.Value = FlowDataPinResult.Value;
-		EnumValue.EnumClass = FlowDataPinResult.EnumClass;
-
-		return true;
-	}
-
-	return false;
+	const EFlowDataPinResolveResult ResolveResult = PinOwnerFlowNode.TryResolveDataPinValue<FFlowPinType_Enum>(PinName, EnumValue.Value, EnumValue.EnumClass);
+	return FlowPinType::IsSuccess(ResolveResult);
 }

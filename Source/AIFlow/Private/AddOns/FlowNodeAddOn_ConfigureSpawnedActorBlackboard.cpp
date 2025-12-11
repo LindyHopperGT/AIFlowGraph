@@ -23,7 +23,7 @@ void UFlowNodeAddOn_ConfigureSpawnedActorBlackboard::FinishedSpawningActor_Imple
 			*BlackboardComponent,
 			PerActorOptionsAssignmentMethod,
 			EntriesForEveryActor,
-			PerActorOptions);
+			&PerActorOptions);
 	}
 
 	Super::FinishedSpawningActor_Implementation(SpawnedActor, SpawningNodeOrAddOn);

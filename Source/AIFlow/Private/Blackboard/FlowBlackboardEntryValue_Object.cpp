@@ -5,7 +5,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIFlowLogChannels.h"
 #include "Nodes/FlowNode.h"
-#include "Types/FlowDataPinProperties.h"
+#include "Types/FlowDataPinValuesStandard.h"
 #include "Types/FlowDataPinResults.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(FlowBlackboardEntryValue_Object)
@@ -128,7 +128,7 @@ void UFlowBlackboardEntryValue_Object::RefreshObjectTypeFromBaseClass()
 
 #endif // WITH_EDITOR
 
-bool UFlowBlackboardEntryValue_Object::TryProvideFlowDataPinProperty(const bool bIsInputPin, TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const
+bool UFlowBlackboardEntryValue_Object::TryProvideFlowDataPinProperty(TInstancedStruct<FFlowDataPinValue>& OutFlowDataPinProperty) const
 {
 	UObject* ObjectValue = GetObjectValue();
 
@@ -140,15 +140,7 @@ bool UFlowBlackboardEntryValue_Object::TryProvideFlowDataPinProperty(const bool 
 	ClassFilter = BaseClass;
 #endif // WITH_EDITOR
 
-	if (bIsInputPin)
-	{
-		OutFlowDataPinProperty.InitializeAs<FFlowDataPinInputProperty_Object>(ObjectValue, ClassFilter);
-	}
-	else
-	{
-		OutFlowDataPinProperty.InitializeAs<FFlowDataPinOutputProperty_Object>(ObjectValue, ClassFilter);
-	}
-
+	OutFlowDataPinProperty.InitializeAs<FFlowDataPinValue_Object>(ObjectValue, ClassFilter);
 	return true;
 }
 
@@ -156,9 +148,9 @@ bool UFlowBlackboardEntryValue_Object::TryProvideFlowDataPinPropertyFromBlackboa
 	const FName& BlackboardKeyName,
 	const UBlackboardKeyType& BlackboardKeyType,
 	UBlackboardComponent* OptionalBlackboardComponent,
-	TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const
+	TInstancedStruct<FFlowDataPinValue>& OutFlowDataPinProperty) const
 {
-	if (TryProvideFlowDataPinPropertyFromBlackboardEntryTemplate<UBlackboardKeyType_Object, FFlowDataPinOutputProperty_Object>(
+	if (TryProvideFlowDataPinPropertyFromBlackboardEntryTemplate<UBlackboardKeyType_Object, FFlowDataPinValue_Object>(
 		BlackboardKeyName,
 		BlackboardKeyType,
 		OptionalBlackboardComponent,
@@ -166,7 +158,7 @@ bool UFlowBlackboardEntryValue_Object::TryProvideFlowDataPinPropertyFromBlackboa
 	{
 #if WITH_EDITOR
 		const UBlackboardKeyType_Object* TypedKeyType = CastChecked<UBlackboardKeyType_Object>(&BlackboardKeyType);
-		FFlowDataPinOutputProperty_Object* MutableProperty = OutFlowDataPinProperty.GetMutablePtr<FFlowDataPinOutputProperty_Object>();
+		FFlowDataPinValue_Object* MutableProperty = OutFlowDataPinProperty.GetMutablePtr<FFlowDataPinValue_Object>();
 
 		// Only the editor data has the BaseClass or ClassFilter
 		// so we only can supply (or use) that information in editor builds
@@ -211,16 +203,10 @@ void UFlowBlackboardEntryValue_Object::SetObjectValue(UObject* InValue)
 
 bool UFlowBlackboardEntryValue_Object::TrySetValueFromInputDataPin(const FName& PinName, UFlowNode& PinOwnerFlowNode)
 {
-	const FFlowDataPinResult_Object FlowDataPinResult = PinOwnerFlowNode.TryResolveDataPinAsObject(PinName);
-
-	if (FlowDataPinResult.Result == EFlowDataPinResolveResult::Success)
-	{
-		SetObjectValue(FlowDataPinResult.Value);
-
-		return true;
-	}
-
-	return false;
+	TObjectPtr<UObject> ResolvedObject = nullptr;
+	const EFlowDataPinResolveResult ResolveResult = PinOwnerFlowNode.TryResolveDataPinValue<FFlowPinType_Object>(PinName, ResolvedObject);
+	SetObjectValue(ResolvedObject);
+	return FlowPinType::IsSuccess(ResolveResult);
 }
 
 void UFlowBlackboardEntryValue_Object::SetOnBlackboardComponent(UBlackboardComponent* BlackboardComponent) const

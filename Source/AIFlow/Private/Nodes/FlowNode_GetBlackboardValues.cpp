@@ -7,7 +7,9 @@
 #include "AIFlowTags.h"
 #include "BehaviorTree/Blackboard/BlackboardKeyType.h"
 #include "Blackboard/FlowBlackboardEntryValue_Enum.h"
-#include "InstancedStruct.h"
+#include "Types/FlowAutoDataPinsWorkingData.h"
+#include "Types/FlowDataPinValuesStandard.h"
+#include "StructUtils/InstancedStruct.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(FlowNode_GetBlackboardValues)
 
@@ -18,9 +20,7 @@ UFlowNode_GetBlackboardValues::UFlowNode_GetBlackboardValues()
 {
 #if WITH_EDITOR
 	NodeDisplayStyle = FlowNodeStyle::Blackboard;
-
-	// TODO (gtaylor) Still needs a bit more testing and refinement, when time allows.
-	Category = TEXT("Experimental");
+	Category = TEXT("Blackboard");
 #endif
 
 	InputPins.Empty();
@@ -32,13 +32,14 @@ UFlowNode_GetBlackboardValues::UFlowNode_GetBlackboardValues()
 AActor* UFlowNode_GetBlackboardValues::TryResolveActorForBlackboard() const
 {
 	// TODO (gtaylor) Cache this result for better lookup perf + an exec pin to provoke a recache operation
+	
+	// Use the SpecificActor if provided, otherwise use the Flow Owner Actor
+	TObjectPtr<UObject> ResolvedObject = nullptr;
+	const EFlowDataPinResolveResult ResolveResult = TryResolveDataPinValue<FFlowPinType_Object>(INPIN_SpecificActor, ResolvedObject);
 
-	// First check the specific actor pin
-	const FFlowDataPinResult_Object PinResult = TryResolveDataPinAsObject(INPIN_SpecificActor);
-
-	if (PinResult.Result == EFlowDataPinResolveResult::Success)
+	if (FlowPinType::IsSuccess(ResolveResult) && ResolvedObject)
 	{
-		AActor* ResolvedSpecificActor = Cast<AActor>(PinResult.Value);
+		AActor* ResolvedSpecificActor = Cast<AActor>(ResolvedObject);
 		if (IsValid(ResolvedSpecificActor))
 		{
 			return ResolvedSpecificActor;
@@ -56,10 +57,19 @@ AActor* UFlowNode_GetBlackboardValues::TryResolveActorForBlackboard() const
 
 UBlackboardComponent* UFlowNode_GetBlackboardValues::GetBlackboardComponentToApplyTo() const
 {
+	// TODO (gtaylor) Consider consolidating with UFlowNode_SetBlackboardValuesV2::GetBlackboardComponentsToApplyTo()
+	UBlackboardData* DesiredBlackboardAsset = SpecificBlackboardAsset;
+
 	TSubclassOf<UBlackboardComponent> BlackboardComponentClass = UBlackboardComponent::StaticClass();
 	if (UAIFlowAsset* AIFlowAsset = Cast<UAIFlowAsset>(GetFlowAsset()))
 	{
 		BlackboardComponentClass = AIFlowAsset->GetBlackboardComponentClass();
+
+		// Default to the Flow Asset's default blackboard, if no SpecificBlackboardAsset was specified.
+		if (!DesiredBlackboardAsset)
+		{
+			DesiredBlackboardAsset = AIFlowAsset->GetBlackboardAsset();
+		}
 	}
 
 	AActor* ActorSourceForBlackboard = TryResolveActorForBlackboard();
@@ -75,58 +85,11 @@ UBlackboardComponent* UFlowNode_GetBlackboardValues::GetBlackboardComponentToApp
 			*ActorSourceForBlackboard,
 			InjectComponentsManager,
 			BlackboardComponentClass,
-			SpecificBlackboardAsset,
+			DesiredBlackboardAsset,
 			SpecificBlackboardSearchRule,
 			EActorBlackboardInjectRule::DoNotInjectIfMissing);
 
 	return BlackboardComponent;
-}
-
-bool UFlowNode_GetBlackboardValues::TryFindPropertyByRemappedPinName(const FName& RemappedPinName, const FProperty*& OutFoundProperty, TInstancedStruct<FFlowDataPinProperty>& OutFoundInstancedStruct, EFlowDataPinResolveResult& InOutResult) const
-{
-	if (RemappedPinName == INPIN_SpecificActor)
-	{
-		// If finding the property for SpecificActor, we cannot look on our blackboard, 
-		// otherwise we will end up recursing infinitely (because it will lookup the specific actor...)
-		return Super::TryFindPropertyByRemappedPinName(RemappedPinName, OutFoundProperty, OutFoundInstancedStruct, InOutResult);
-	}
-
-	// The GetBlackboardValues node stores its properties in instanced structs in an array, so look there first
-
-	UBlackboardComponent* BlackboardComponent = GetBlackboardComponentToApplyTo();
-
-	if (IsValid(BlackboardComponent) && IsValid(BlackboardComponent->GetBlackboardAsset()))
-	{
-		for (const FFlowBlackboardEntry& BlackboardEntry : BlackboardEntries)
-		{
-			if (BlackboardEntry.KeyName != RemappedPinName)
-			{
-				continue;
-			}
-
-			UBlackboardKeyType* BlackboardKeyType = GetBlackboardKeyTypeFromBlackboardKeyName(BlackboardComponent->GetBlackboardAsset(), BlackboardEntry.KeyName);
-
-			const bool bProvidedValueFromBlackboard = 
-				FAIFlowActorBlackboardHelper::TryProvideFlowDataPinPropertyFromBlackboardEntry(
-					RemappedPinName,
-					BlackboardKeyType,
-					BlackboardComponent,
-					OutFoundInstancedStruct);
-
-			if (bProvidedValueFromBlackboard)
-			{
-				return true;
-			}
-			else
-			{
-				LogError(FString::Printf(TEXT("Could not get value for pin name %s, on blackboard %s"), *RemappedPinName.ToString(), *BlackboardComponent->GetName()), EFlowOnScreenMessageType::Temporary);
-
-				return false;
-			}
-		}
-	}
-
-	return Super::TryFindPropertyByRemappedPinName(RemappedPinName, OutFoundProperty, OutFoundInstancedStruct, InOutResult);
 }
 
 #if WITH_EDITOR
@@ -179,8 +142,11 @@ UBlackboardData* UFlowNode_GetBlackboardValues::GetBlackboardAssetForPropertyHan
 	return Super::GetBlackboardAssetForPropertyHandle(PropertyHandle);
 }
 
-void UFlowNode_GetBlackboardValues::AutoGenerateDataPins(TMap<FName, FName>& InOutPinNameToBoundPropertyNameMap, TArray<FFlowPin>& InOutInputDataPins, TArray<FFlowPin>& InOutOutputDataPins) const
+void UFlowNode_GetBlackboardValues::AutoGenerateDataPins(FFlowAutoDataPinsWorkingData& InOutWorkingData) const
 {
+	Super::AutoGenerateDataPins(InOutWorkingData);
+
+	// TODO (gtaylor) Consider combining/merging with UFlowNode_GetBlackboardValues::AutoGenerateDataPins() version
 	const UBlackboardData* BlackboardAssetForEditor = GetBlackboardAssetForEditor();
 
 	if (!IsValid(BlackboardAssetForEditor))
@@ -207,22 +173,28 @@ void UFlowNode_GetBlackboardValues::AutoGenerateDataPins(TMap<FName, FName>& InO
 			continue;
 		}
 
-		TInstancedStruct<FFlowDataPinProperty> InstancedFlowDataPinProperty;
+		TInstancedStruct<FFlowDataPinValue> InstancedFlowDataPinProperty;
 
 		constexpr UBlackboardComponent* BlackboardComponent = nullptr;
-		const bool bProvidedValueFromBlackboard =
+		const EFlowDataPinResolveResult ProvidedResult =
 			FAIFlowActorBlackboardHelper::TryProvideFlowDataPinPropertyFromBlackboardEntry(
 				PinName,
 				BlackboardKeyType,
 				BlackboardComponent,
 				InstancedFlowDataPinProperty);
 
-		if (bProvidedValueFromBlackboard)
+		if (FlowPinType::IsSuccess(ProvidedResult))
 		{
-			InOutPinNameToBoundPropertyNameMap.Add(PinName, PinName);
-
-			FFlowPin NewFlowPin = FFlowDataPinProperty::CreateFlowPin(PinName, InstancedFlowDataPinProperty);
-			InOutOutputDataPins.AddUnique(NewFlowPin);
+			const FFlowDataPinValue& FlowDataPinValuePtr = InstancedFlowDataPinProperty.Get<FFlowDataPinValue>();
+			if (const FFlowPinType* FlowPinType = FFlowPinType::LookupPinType(FlowDataPinValuePtr.GetPinTypeName()))
+			{
+				FFlowPin NewFlowPin = FlowPinType->CreateFlowPinFromValueWrapper(PinName, FlowDataPinValuePtr);
+				InOutWorkingData.AutoOutputDataPinsNext.AddUnique(NewFlowPin);
+			}
+			else
+			{
+				LogError(FString::Printf(TEXT("Could not auto-generate pin %s: Could not find pin type %s."), *PinName.ToString(), *FlowDataPinValuePtr.GetPinTypeName().ToString()), EFlowOnScreenMessageType::Temporary);
+			}
 		}
 		else
 		{
@@ -264,181 +236,28 @@ UBlackboardKeyType* UFlowNode_GetBlackboardValues::GetBlackboardKeyTypeFromBlack
 	return nullptr;
 }
 
-// Must implement TrySupplyDataPinAs... for every EFlowPinType
-FLOW_ASSERT_ENUM_MAX(EFlowPinType, 16);
-
-FFlowDataPinResult_Bool UFlowNode_GetBlackboardValues::TrySupplyDataPinAsBool_Implementation(const FName& PinName) const
-{
-	if (UBlackboardComponent* BlackboardComponent = GetBlackboardComponentToApplyTo())
-	{
-		return FFlowDataPinResult_Bool(BlackboardComponent->GetValueAsBool(PinName));
-	}
-
-	return Super::TrySupplyDataPinAsBool_Implementation(PinName);
-}
-
-FFlowDataPinResult_Int UFlowNode_GetBlackboardValues::TrySupplyDataPinAsInt_Implementation(const FName& PinName) const
-{
-	if (UBlackboardComponent* BlackboardComponent = GetBlackboardComponentToApplyTo())
-	{
-		return FFlowDataPinResult_Int(BlackboardComponent->GetValueAsInt(PinName));
-	}
-
-	return Super::TrySupplyDataPinAsInt_Implementation(PinName);
-}
-
-FFlowDataPinResult_Float UFlowNode_GetBlackboardValues::TrySupplyDataPinAsFloat_Implementation(const FName& PinName) const
-{
-	if (UBlackboardComponent* BlackboardComponent = GetBlackboardComponentToApplyTo())
-	{
-		return FFlowDataPinResult_Float(BlackboardComponent->GetValueAsFloat(PinName));
-	}
-
-	return Super::TrySupplyDataPinAsFloat_Implementation(PinName);
-}
-
-FFlowDataPinResult_Name UFlowNode_GetBlackboardValues::TrySupplyDataPinAsName_Implementation(const FName& PinName) const
-{
-	if (UBlackboardComponent* BlackboardComponent = GetBlackboardComponentToApplyTo())
-	{
-		return FFlowDataPinResult_Name(BlackboardComponent->GetValueAsName(PinName));
-	}
-
-	return Super::TrySupplyDataPinAsName_Implementation(PinName);
-}
-
-FFlowDataPinResult_String UFlowNode_GetBlackboardValues::TrySupplyDataPinAsString_Implementation(const FName& PinName) const
-{
-	if (UBlackboardComponent* BlackboardComponent = GetBlackboardComponentToApplyTo())
-	{
-		return FFlowDataPinResult_String(BlackboardComponent->GetValueAsString(PinName));
-	}
-
-	return Super::TrySupplyDataPinAsString_Implementation(PinName);
-}
-
-FFlowDataPinResult_Enum UFlowNode_GetBlackboardValues::TrySupplyDataPinAsEnum_Implementation(const FName& PinName) const
-{
-	if (UBlackboardComponent* BlackboardComponent = GetBlackboardComponentToApplyTo())
-	{
-		FFlowDataPinResult_Enum EnumResult = UFlowBlackboardEntryValue_Enum::TryBuildDataPinResultFromBlackboardEnumEntry(PinName, *BlackboardComponent);
-
-		if (EnumResult.Result == EFlowDataPinResolveResult::Success)
-		{
-			return EnumResult;
-		}
-	}
-
-	return Super::TrySupplyDataPinAsEnum_Implementation(PinName);
-}
-
-FFlowDataPinResult_Vector UFlowNode_GetBlackboardValues::TrySupplyDataPinAsVector_Implementation(const FName& PinName) const
-{
-	if (UBlackboardComponent* BlackboardComponent = GetBlackboardComponentToApplyTo())
-	{
-		return FFlowDataPinResult_Vector(BlackboardComponent->GetValueAsVector(PinName));
-	}
-
-	return Super::TrySupplyDataPinAsVector_Implementation(PinName);
-}
-
-FFlowDataPinResult_Rotator UFlowNode_GetBlackboardValues::TrySupplyDataPinAsRotator_Implementation(const FName& PinName) const
-{
-	if (UBlackboardComponent* BlackboardComponent = GetBlackboardComponentToApplyTo())
-	{
-		return FFlowDataPinResult_Rotator(BlackboardComponent->GetValueAsRotator(PinName));
-	}
-
-	return Super::TrySupplyDataPinAsRotator_Implementation(PinName);
-}
-
-FFlowDataPinResult_GameplayTag UFlowNode_GetBlackboardValues::TrySupplyDataPinAsGameplayTag_Implementation(const FName& PinName) const
-{
-	if (UBlackboardComponent* BlackboardComponent = GetBlackboardComponentToApplyTo())
-	{
-		if (const UBlackboardKeyType* BlackboardKeyType = GetBlackboardKeyTypeFromBlackboardKeyName(BlackboardComponent->GetBlackboardAsset(), PinName))
-		{
-			// Because FGameplayTag blackboard support is provided by an extension plugin (that this plugin cannot access),
-			// we need to use a more expensive lookup pathway using the UFlowBlackboardEntryValue subclass that 
-			// supports the BlackboardKeyType of the key we want to lookup.
-
-			TInstancedStruct<FFlowDataPinProperty> InstancedFlowDataPinProperty;
-
-			const bool bProvidedValueFromBlackboard =
-				FAIFlowActorBlackboardHelper::TryProvideFlowDataPinPropertyFromBlackboardEntry(
-					PinName,
-					BlackboardKeyType,
-					BlackboardComponent,
-					InstancedFlowDataPinProperty);
-
-			if (const FFlowDataPinOutputProperty_GameplayTag* TagProperty = InstancedFlowDataPinProperty.GetPtr<FFlowDataPinOutputProperty_GameplayTag>())
-			{
-				return FFlowDataPinResult_GameplayTag(TagProperty->Value);
-			}
-		}
-		else
-		{
-			LogError(FString::Printf(TEXT("Could supply data pin as gameplay tag, because the blackboard key %s could not be found on the blackboard %s."), *PinName.ToString(), *BlackboardComponent->GetName()), EFlowOnScreenMessageType::Temporary);
-		}
-	}
-
-	return Super::TrySupplyDataPinAsGameplayTag_Implementation(PinName);
-}
-
-FFlowDataPinResult_GameplayTagContainer UFlowNode_GetBlackboardValues::TrySupplyDataPinAsGameplayTagContainer_Implementation(const FName& PinName) const
-{
-	if (UBlackboardComponent* BlackboardComponent = GetBlackboardComponentToApplyTo())
-	{
-		if (const UBlackboardKeyType* BlackboardKeyType = GetBlackboardKeyTypeFromBlackboardKeyName(BlackboardComponent->GetBlackboardAsset(), PinName))
-		{
-			// Because FGameplayTagContainer blackboard support is provided by an extension plugin (that this plugin cannot access),
-			// we need to use a more expensive lookup pathway using the UFlowBlackboardEntryValue subclass that 
-			// supports the BlackboardKeyType of the key we want to lookup.
-
-			TInstancedStruct<FFlowDataPinProperty> InstancedFlowDataPinProperty;
-
-			const bool bProvidedValueFromBlackboard =
-				FAIFlowActorBlackboardHelper::TryProvideFlowDataPinPropertyFromBlackboardEntry(
-					PinName,
-					BlackboardKeyType,
-					BlackboardComponent,
-					InstancedFlowDataPinProperty);
-
-			if (const FFlowDataPinOutputProperty_GameplayTagContainer* TagContainerProperty = InstancedFlowDataPinProperty.GetPtr<FFlowDataPinOutputProperty_GameplayTagContainer>())
-			{
-				return FFlowDataPinResult_GameplayTagContainer(TagContainerProperty->Value);
-			}
-		}
-		else
-		{
-			LogError(FString::Printf(TEXT("Could supply data pin as gameplay tag container, because the blackboard key %s could not be found on the blackboard %s."), *PinName.ToString(), *BlackboardComponent->GetName()), EFlowOnScreenMessageType::Temporary);
-		}
-	}
-
-	return Super::TrySupplyDataPinAsGameplayTagContainer_Implementation(PinName);
-}
-
-FFlowDataPinResult_Object UFlowNode_GetBlackboardValues::TrySupplyDataPinAsObject_Implementation(const FName& PinName) const
+FFlowDataPinResult UFlowNode_GetBlackboardValues::TrySupplyDataPin_Implementation(FName PinName) const
 {
 	if (PinName == INPIN_SpecificActor)
 	{
-		return Super::TrySupplyDataPinAsObject_Implementation(PinName);
+		return Super::TrySupplyDataPin_Implementation(PinName);
 	}
 
 	if (UBlackboardComponent* BlackboardComponent = GetBlackboardComponentToApplyTo())
 	{
-		return FFlowDataPinResult_Object(BlackboardComponent->GetValueAsObject(PinName));
+		const UBlackboardKeyType* BlackboardKeyType = BlackboardComponent->GetBlackboardKeyType(PinName);
+		
+		FFlowDataPinResult SuppliedResult;
+
+		SuppliedResult.Result =
+			FAIFlowActorBlackboardHelper::TryProvideFlowDataPinPropertyFromBlackboardEntry(
+				PinName,
+				BlackboardKeyType,
+				BlackboardComponent,
+				SuppliedResult.ResultValue);
+
+		return SuppliedResult;
 	}
 
-	return Super::TrySupplyDataPinAsObject_Implementation(PinName);
-}
-
-FFlowDataPinResult_Class UFlowNode_GetBlackboardValues::TrySupplyDataPinAsClass_Implementation(const FName& PinName) const
-{
-	if (UBlackboardComponent* BlackboardComponent = GetBlackboardComponentToApplyTo())
-	{
-		return FFlowDataPinResult_Class(BlackboardComponent->GetValueAsClass(PinName));
-	}
-
-	return Super::TrySupplyDataPinAsClass_Implementation(PinName);
+	return Super::TrySupplyDataPin_Implementation(PinName);
 }

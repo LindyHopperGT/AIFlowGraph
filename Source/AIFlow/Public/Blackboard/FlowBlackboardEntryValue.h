@@ -19,7 +19,7 @@ class UBlackboardKeyType;
 class UBlackboardComponent;
 class UFlowBlackboardEntryValue;
 class UFlowNode;
-struct FFlowDataPinProperty;
+struct FFlowDataPinValue;
 
 // Enum to control visibility of the UFlowBlackboardEntryValue's Key in EditCondition
 UENUM()
@@ -94,7 +94,7 @@ public:
 #endif // WITH_EDITOR
 
 	// IFlowDataPinPropertyProviderInterface
-	virtual bool TryProvideFlowDataPinProperty(const bool bIsInputPin, TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const { return false; }
+	virtual bool TryProvideFlowDataPinProperty(TInstancedStruct<FFlowDataPinValue>& OutFlowDataPinProperty) const { return false; }
 	// --
 
 	// Try to provide a blackboard entry value for a key, if the type is supported by this class, in the form of a FFlowDataPinProperty
@@ -102,7 +102,7 @@ public:
 		const FName& BlackboardKeyName,
 		const UBlackboardKeyType& BlackboardKeyType,
 		UBlackboardComponent* OptionalBlackboardComponent,
-		TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const PURE_VIRTUAL(TryProvideFlowDataPinPropertyFromBlackboardEntry, return false;);
+		TInstancedStruct<FFlowDataPinValue>& OutFlowDataPinProperty) const PURE_VIRTUAL(TryProvideFlowDataPinPropertyFromBlackboardEntry, return false;);
 
 	// Ensures the CachedBlackboardEntryValueSubclassArray has been cached and returns its value
 	static const TArray<TWeakObjectPtr<UClass>>& EnsureBlackboardEntryValueSubclassArray();
@@ -115,7 +115,7 @@ protected:
 		const FName& BlackboardKeyName,
 		const UBlackboardKeyType& BlackboardKeyType,
 		UBlackboardComponent* OptionalBlackboardComponent,
-		TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty)
+		TInstancedStruct<FFlowDataPinValue>& OutFlowDataPinProperty)
 	{
 		if (BlackboardKeyType.IsA<TBlackboardEntryType>())
 		{

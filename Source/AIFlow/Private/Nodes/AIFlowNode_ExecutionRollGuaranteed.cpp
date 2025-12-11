@@ -32,6 +32,14 @@ UAIFlowNode_ExecutionRollGuaranteed::UAIFlowNode_ExecutionRollGuaranteed(const F
 	AllowedSignalModes = {EFlowSignalMode::Enabled, EFlowSignalMode::Disabled};
 }
 
+void UAIFlowNode_ExecutionRollGuaranteed::OnActivate()
+{
+	Super::OnActivate();
+
+	const int32 RandomSeed = GetRandomSeed();
+	RandomStream.Initialize(RandomSeed);
+}
+
 void UAIFlowNode_ExecutionRollGuaranteed::ExecuteInput(const FName& PinName)
 {
 	if (PinName == DefaultInputPin.PinName)
@@ -41,15 +49,15 @@ void UAIFlowNode_ExecutionRollGuaranteed::ExecuteInput(const FName& PinName)
 
 		const bool bResetOnMaxAttempts = RollAttempts == MaximumAttempts;
 		
-		if(bHasSuccessfullyRolled)
+		if (bHasSuccessfullyRolled)
 		{
 			TriggerOutput(OUTPIN_FailureOut, bResetOnMaxAttempts);
 		}
 		else
 		{
-			const int32 Random = FMath::RandRange(0, MaximumAttempts - RollAttempts);
+			const int32 Random = RandomStream.RandRange(0, MaximumAttempts - RollAttempts);
 
-			if(Random == 0)
+			if (Random == 0)
 			{
 				bHasSuccessfullyRolled = true; 
 				TriggerOutput(OUTPIN_GuaranteedOut, bResetOnSuccess || bResetOnMaxAttempts);

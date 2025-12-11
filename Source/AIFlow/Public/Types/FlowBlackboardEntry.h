@@ -26,6 +26,9 @@ public:
 
 	const FName& GetKeyName() const { return KeyName; }
 
+	bool operator ==(const FFlowBlackboardEntry& Other) const { return KeyName == Other.KeyName; }
+	bool operator !=(const FFlowBlackboardEntry& Other) const { return !(*this == Other); }
+
 public:
 
 	// The blackboard Key's name

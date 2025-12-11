@@ -23,7 +23,6 @@ struct FAIFlowCachedBlackboardReference;
 struct FBlackboardEntry;
 
 // Operator for UFlowNodeAddOn_PredicateCompareBlackboardValue's compare operation
-// TODO jserrallonga 2024-11-21: Refactor this operator type enum to exist somewhere else. 
 UENUM(BlueprintType)
 enum class EPredicateCompareOperatorType : uint8
 {
@@ -95,7 +94,7 @@ public:
 	// --
 
 	// UFlowNodeBase
-	virtual FText GetNodeTitle() const override;
+	virtual FText K2_GetNodeTitle_Implementation() const override;
 	// --
 
 	// IFlowBlackboardAssetProvider

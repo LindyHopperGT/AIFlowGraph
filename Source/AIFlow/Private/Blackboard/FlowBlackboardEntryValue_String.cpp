@@ -5,7 +5,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIFlowLogChannels.h"
 #include "Nodes/FlowNode.h"
-#include "Types/FlowDataPinProperties.h"
+#include "Types/FlowDataPinValuesStandard.h"
 #include "Types/FlowDataPinResults.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(FlowBlackboardEntryValue_String)
@@ -30,17 +30,9 @@ FText UFlowBlackboardEntryValue_String::BuildNodeConfigText() const
 }
 #endif // WITH_EDITOR
 
-bool UFlowBlackboardEntryValue_String::TryProvideFlowDataPinProperty(const bool bIsInputPin, TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const
+bool UFlowBlackboardEntryValue_String::TryProvideFlowDataPinProperty(TInstancedStruct<FFlowDataPinValue>& OutFlowDataPinProperty) const
 {
-	if (bIsInputPin)
-	{
-		OutFlowDataPinProperty.InitializeAs<FFlowDataPinInputProperty_String>(StringValue);
-	}
-	else
-	{
-		OutFlowDataPinProperty.InitializeAs<FFlowDataPinOutputProperty_String>(StringValue);
-	}
-
+	OutFlowDataPinProperty.InitializeAs<FFlowDataPinValue_String>(StringValue);
 	return true;
 }
 
@@ -48,10 +40,10 @@ bool UFlowBlackboardEntryValue_String::TryProvideFlowDataPinPropertyFromBlackboa
 	const FName& BlackboardKeyName,
 	const UBlackboardKeyType& BlackboardKeyType,
 	UBlackboardComponent* OptionalBlackboardComponent,
-	TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const
+	TInstancedStruct<FFlowDataPinValue>& OutFlowDataPinProperty) const
 {
 	return
-		TryProvideFlowDataPinPropertyFromBlackboardEntryTemplate<UBlackboardKeyType_String, FFlowDataPinOutputProperty_String>(
+		TryProvideFlowDataPinPropertyFromBlackboardEntryTemplate<UBlackboardKeyType_String, FFlowDataPinValue_String>(
 			BlackboardKeyName,
 			BlackboardKeyType,
 			OptionalBlackboardComponent,
@@ -60,16 +52,8 @@ bool UFlowBlackboardEntryValue_String::TryProvideFlowDataPinPropertyFromBlackboa
 
 bool UFlowBlackboardEntryValue_String::TrySetValueFromInputDataPin(const FName& PinName, UFlowNode& PinOwnerFlowNode)
 {
-	const FFlowDataPinResult_String FlowDataPinResult = PinOwnerFlowNode.TryResolveDataPinAsString(PinName);
-
-	if (FlowDataPinResult.Result == EFlowDataPinResolveResult::Success)
-	{
-		StringValue = FlowDataPinResult.Value;
-
-		return true;
-	}
-
-	return false;
+	const EFlowDataPinResolveResult ResolveResult = PinOwnerFlowNode.TryResolveDataPinValue<FFlowPinType_String>(PinName, StringValue);
+	return FlowPinType::IsSuccess(ResolveResult);
 }
 
 void UFlowBlackboardEntryValue_String::SetOnBlackboardComponent(UBlackboardComponent* BlackboardComponent) const

@@ -4,4 +4,4 @@
 
 #include "Logging/LogMacros.h"
 
-DECLARE_LOG_CATEGORY_EXTERN(LogAIFlow, Log, All)
+AIFLOW_API DECLARE_LOG_CATEGORY_EXTERN(LogAIFlow, Log, All)

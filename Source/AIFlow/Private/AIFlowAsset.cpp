@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/Pawn.h"
+#include "Interfaces/AIFlowOwnerInterface.h"
 #include "Misc/DataValidation.h"
 #include "Types/FlowInjectComponentsHelper.h"
 #include "Types/FlowInjectComponentsManager.h"
@@ -24,11 +25,23 @@ void UAIFlowAsset::InitializeInstance(const TWeakObjectPtr<UObject> InOwner, UFl
 
 	check(Owner == InOwner.Get());
 
+	// Start with a 'random' random seed, 
+	// this could be overridden with a stable random seed if subclasses wish.
+	const FDateTime& CurrentTime = FDateTime::Now();
+	FRandomStream RandomStream(static_cast<int32>(CurrentTime.GetTicks()));
+	RandomSeed = RandomStream.RandHelper(INT32_MAX);
+
 	if (UObject* FlowOwnerActor = TryFindActorOwner())
 	{
 		CreateAndRegisterBlackboardComponent();
 
 		SetKeySelfOnBlackboardComponent(BlackboardComponent.Get());
+	}
+
+	UObject* OwnerObject = Owner.Get();
+	if (IsValid(OwnerObject) && OwnerObject->Implements<UAIFlowOwnerInterface>())
+	{
+		IAIFlowOwnerInterface::Execute_PostFlowAssetInitializeInstance(OwnerObject, this);
 	}
 }
 

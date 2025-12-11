@@ -5,7 +5,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIFlowLogChannels.h"
 #include "Nodes/FlowNode.h"
-#include "Types/FlowDataPinProperties.h"
+#include "Types/FlowDataPinValuesStandard.h"
 #include "Types/FlowDataPinResults.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(FlowBlackboardEntryValue_Int)
@@ -35,17 +35,9 @@ FText UFlowBlackboardEntryValue_Int::BuildNodeConfigText() const
 }
 #endif // WITH_EDITOR
 
-bool UFlowBlackboardEntryValue_Int::TryProvideFlowDataPinProperty(const bool bIsInputPin, TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const
+bool UFlowBlackboardEntryValue_Int::TryProvideFlowDataPinProperty(TInstancedStruct<FFlowDataPinValue>& OutFlowDataPinProperty) const
 {
-	if (bIsInputPin)
-	{
-		OutFlowDataPinProperty.InitializeAs<FFlowDataPinInputProperty_Int32>(IntValue);
-	}
-	else
-	{
-		OutFlowDataPinProperty.InitializeAs<FFlowDataPinOutputProperty_Int32>(IntValue);
-	}
-
+	OutFlowDataPinProperty.InitializeAs<FFlowDataPinValue_Int>(IntValue);
 	return true;
 }
 
@@ -53,10 +45,10 @@ bool UFlowBlackboardEntryValue_Int::TryProvideFlowDataPinPropertyFromBlackboardE
 	const FName& BlackboardKeyName,
 	const UBlackboardKeyType& BlackboardKeyType,
 	UBlackboardComponent* OptionalBlackboardComponent,
-	TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const
+	TInstancedStruct<FFlowDataPinValue>& OutFlowDataPinProperty) const
 {
 	return
-		TryProvideFlowDataPinPropertyFromBlackboardEntryTemplate<UBlackboardKeyType_Int, FFlowDataPinOutputProperty_Int32>(
+		TryProvideFlowDataPinPropertyFromBlackboardEntryTemplate<UBlackboardKeyType_Int, FFlowDataPinValue_Int>(
 			BlackboardKeyName,
 			BlackboardKeyType,
 			OptionalBlackboardComponent,
@@ -65,16 +57,8 @@ bool UFlowBlackboardEntryValue_Int::TryProvideFlowDataPinPropertyFromBlackboardE
 
 bool UFlowBlackboardEntryValue_Int::TrySetValueFromInputDataPin(const FName& PinName, UFlowNode& PinOwnerFlowNode)
 {
-	const FFlowDataPinResult_Int FlowDataPinResult = PinOwnerFlowNode.TryResolveDataPinAsInt(PinName);
-
-	if (FlowDataPinResult.Result == EFlowDataPinResolveResult::Success)
-	{
-		IntValue = static_cast<int32>(FlowDataPinResult.Value);
-
-		return true;
-	}
-
-	return false;
+	const EFlowDataPinResolveResult ResolveResult = PinOwnerFlowNode.TryResolveDataPinValue<FFlowPinType_Int>(PinName, IntValue);
+	return FlowPinType::IsSuccess(ResolveResult);
 }
 
 void UFlowBlackboardEntryValue_Int::SetOnBlackboardComponent(UBlackboardComponent* BlackboardComponent) const

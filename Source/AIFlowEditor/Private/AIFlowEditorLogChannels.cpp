@@ -1,5 +1,5 @@
 // Copyright https://github.com/MothCocoon/FlowGraph/graphs/contributors
 
-#include "AIFlowLogChannels.h"
+#include "AIFlowEditorLogChannels.h"
 
 DEFINE_LOG_CATEGORY(LogAIFlowEditor);

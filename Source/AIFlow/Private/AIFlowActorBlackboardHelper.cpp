@@ -175,20 +175,20 @@ void FAIFlowActorBlackboardHelper::ApplyBlackboardOptionsToBlackboardComponent(
 	UBlackboardComponent& BlackboardComponent,
 	EPerActorOptionsAssignmentMethod ApplicationMethod,
 	const FAIFlowConfigureBlackboardOption& EntriesForEveryActor,
-	const TArray<FAIFlowConfigureBlackboardOption>& PerActorOptions)
+	const TArray<FAIFlowConfigureBlackboardOption>* PerActorOptions)
 {
 	if (!EntriesForEveryActor.Entries.IsEmpty())
 	{
 		ApplyBlackboardEntries(BlackboardComponent, EntriesForEveryActor.Entries);
 	}
 
-	if (!PerActorOptions.IsEmpty())
+	if (PerActorOptions && !PerActorOptions->IsEmpty())
 	{
-		const int32 PerActorOptionIndex = ChooseNextBlackboardOptionIndex(ApplicationMethod, PerActorOptions);
+		const int32 PerActorOptionIndex = ChooseNextBlackboardOptionIndex(ApplicationMethod, (*PerActorOptions));
 
 		if (PerActorOptionIndex != INDEX_NONE)
 		{
-			const FAIFlowConfigureBlackboardOption& Option = PerActorOptions[PerActorOptionIndex];
+			const FAIFlowConfigureBlackboardOption& Option = (*PerActorOptions)[PerActorOptionIndex];
 
 			ApplyBlackboardEntries(BlackboardComponent, Option.Entries);
 		}
@@ -325,15 +325,15 @@ void FAIFlowActorBlackboardHelper::AppendBlackboardOptions(
 }
 #endif // WITH_EDITOR
 
-bool FAIFlowActorBlackboardHelper::TryProvideFlowDataPinPropertyFromBlackboardEntry(
+EFlowDataPinResolveResult FAIFlowActorBlackboardHelper::TryProvideFlowDataPinPropertyFromBlackboardEntry(
 	const FName& BlackboardKeyName,
 	const UBlackboardKeyType* BlackboardKeyType,
 	UBlackboardComponent* OptionalBlackboardComponent,
-	TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty)
+	TInstancedStruct<FFlowDataPinValue>& OutFlowDataPinProperty)
 {
 	if (!BlackboardKeyType)
 	{
-		return false;
+		return EFlowDataPinResolveResult::FailedMismatchedType;
 	}
 
 	FBlackboard::FKey BlackboardKeyID = FBlackboard::InvalidKey;
@@ -344,7 +344,7 @@ bool FAIFlowActorBlackboardHelper::TryProvideFlowDataPinPropertyFromBlackboardEn
 
 		if (BlackboardKeyID == FBlackboard::InvalidKey)
 		{
-			return false;
+			return EFlowDataPinResolveResult::FailedUnknownPin;
 		}
 
 		const TSubclassOf<UBlackboardKeyType> FoundKeyType = OptionalBlackboardComponent->GetKeyType(BlackboardKeyID);
@@ -359,7 +359,7 @@ bool FAIFlowActorBlackboardHelper::TryProvideFlowDataPinPropertyFromBlackboardEn
 				*BlackboardKeyType->GetName(),
 				*OptionalBlackboardComponent->GetName());
 
-			return false;
+			return EFlowDataPinResolveResult::FailedMismatchedType;
 		}
 	}
 
@@ -384,11 +384,11 @@ bool FAIFlowActorBlackboardHelper::TryProvideFlowDataPinPropertyFromBlackboardEn
 			OptionalBlackboardComponent,
 			OutFlowDataPinProperty))
 		{
-			return true;
+			return EFlowDataPinResolveResult::Success;
 		}
 	}
 
-	return false;
+	return EFlowDataPinResolveResult::FailedMismatchedType;
 }
 
 // FAIFlowCachedBlackboardReference ---

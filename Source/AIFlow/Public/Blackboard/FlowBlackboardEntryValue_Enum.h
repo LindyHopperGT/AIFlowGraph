@@ -34,14 +34,14 @@ public:
 	//~End UFlowBlackboardEntryValue
 	
 	// IFlowDataPinPropertyProviderInterface
-	virtual bool TryProvideFlowDataPinProperty(const bool bIsInputPin, TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const override;
+	virtual bool TryProvideFlowDataPinProperty(TInstancedStruct<FFlowDataPinValue>& OutFlowDataPinProperty) const override;
 	// --
 
 	virtual bool TryProvideFlowDataPinPropertyFromBlackboardEntry(
 		const FName& BlackboardKeyName,
 		const UBlackboardKeyType& BlackboardKeyType,
 		UBlackboardComponent* OptionalBlackboardComponent,
-		TInstancedStruct<FFlowDataPinProperty>& OutFlowDataPinProperty) const override;
+		TInstancedStruct<FFlowDataPinValue>& OutFlowDataPinProperty) const override;
 
 	static FFlowDataPinResult_Enum TryBuildDataPinResultFromBlackboardEnumEntry(const FName& KeyName, const UBlackboardComponent& BlackboardComponent);
 

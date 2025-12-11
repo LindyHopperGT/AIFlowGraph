@@ -3,6 +3,10 @@
 #include "Nodes/FlowNode_SetBlackboardValues.h"
 #include "Blackboard/FlowBlackboardEntryValue.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Types/FlowAutoDataPinsWorkingData.h"
+#include "Types/FlowInjectComponentsManager.h"
+#include "Types/FlowDataPinValue.h"
+#include "AIFlowAsset.h"
 #include "AIFlowTags.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(FlowNode_SetBlackboardValues)
@@ -11,8 +15,9 @@ UFlowNode_SetBlackboardValues::UFlowNode_SetBlackboardValues()
 	: Super()
 {
 #if WITH_EDITOR
-	NodeDisplayStyle = FlowNodeStyle::Blackboard;
-	Category = TEXT("Blackboard");
+	NodeDisplayStyle = FlowNodeStyle::Deprecated;
+	Category = TEXT("Deprecated");
+	bNodeDeprecated = true;
 #endif
 }
 
@@ -21,7 +26,6 @@ void UFlowNode_SetBlackboardValues::ExecuteInput(const FName& PinName)
 	Super::ExecuteInput(PinName);
 
 	// Refresh EntriesForEveryActor from data pin input values
-
 	for (UFlowBlackboardEntryValue* BlackboardEntry : EntriesForEveryActor.Entries)
 	{
 		if (!IsValid(BlackboardEntry))
@@ -33,6 +37,19 @@ void UFlowNode_SetBlackboardValues::ExecuteInput(const FName& PinName)
 
 		(void) BlackboardEntry->TrySetValueFromInputDataPin(BlackboardEntry->Key.KeyName, *this);
 	}
+
+	// Create the InjectComponentsManager sub-object if necessary 
+	// (to track created components and ensure they are cleaned up)
+	const bool bMayInjectComponent = EActorBlackboardInjectRule_Classifiers::NeedsInjectComponentsManager(InjectRule);
+	if (bMayInjectComponent)
+	{
+		EnsureInjectComponentsManager();
+	}
+
+	// Get the Per-Actor Options from a subclass (if any)
+	const TArray<FAIFlowConfigureBlackboardOption>* PerActorOptions = nullptr;
+	EPerActorOptionsAssignmentMethod PerActorOptionsAssignmentMethod = EPerActorOptionsAssignmentMethod::Invalid;
+	(void) TryGetPerActorOptions(PerActorOptions, PerActorOptionsAssignmentMethod);
 
 	// Apply the values to the blackboards
 	const TArray<UBlackboardComponent*> BlackboardComponents = GetBlackboardComponentsToApplyTo();
@@ -59,22 +76,99 @@ void UFlowNode_SetBlackboardValues::ExecuteInput(const FName& PinName)
 	TriggerFirstOutput(bIsFinished);
 }
 
+void UFlowNode_SetBlackboardValues::DeinitializeInstance()
+{
+	CleanupInjectComponentsManager();
+
+	Super::DeinitializeInstance();
+}
+
+void UFlowNode_SetBlackboardValues::EnsureInjectComponentsManager()
+{
+	if (IsValid(InjectComponentsManager))
+	{
+		return;
+	}
+
+	InjectComponentsManager = NewObject<UFlowInjectComponentsManager>(this);
+
+	InjectComponentsManager->InitializeRuntime();
+	InjectComponentsManager->BeforeActorRemovedDelegate.AddDynamic(this, &ThisClass::OnBeforeActorRemoved);
+}
+
+void UFlowNode_SetBlackboardValues::CleanupInjectComponentsManager()
+{
+	if (IsValid(InjectComponentsManager))
+	{
+		InjectComponentsManager->ShutdownRuntime();
+		InjectComponentsManager->BeforeActorRemovedDelegate.RemoveDynamic(this, &ThisClass::OnBeforeActorRemoved);
+	}
+
+	InjectComponentsManager = nullptr;
+}
+
+void UFlowNode_SetBlackboardValues::OnBeforeActorRemoved(AActor* RemovedActor)
+{
+	if (IsValid(RemovedActor))
+	{
+		OnStopMonitoringActor(*RemovedActor);
+	}
+}
+
+TArray<AActor*> UFlowNode_SetBlackboardValues::TryResolveActorsForBlackboard() const
+{
+	// Default to the Flow graph's actor.  
+	// (Not very satisfactory, because the UFlowNode_SetBlackboardValues node does this simpler,
+	// but we expect subclasses to replace this function).
+
+	TArray<AActor*> ResolvedActors;
+	AActor* FoundActor = GetFlowAsset()->TryFindActorOwner();
+	if (IsValid(FoundActor))
+	{
+		ResolvedActors.Reserve(1);
+		ResolvedActors.Add(FoundActor);
+	}
+
+	return ResolvedActors;
+}
+
 TArray<UBlackboardComponent*> UFlowNode_SetBlackboardValues::GetBlackboardComponentsToApplyTo() const
 {
-	TArray<UBlackboardComponent*> BlackboardComponents;
-
-	const FAIFlowCachedBlackboardReference CachedBlackboard(*this, SpecificBlackboardAsset, SpecificBlackboardSearchRule);
-
-	if (CachedBlackboard.IsValid())
+	// Resolve which BlackboardComponentClass to use (if we need inject the blackboard)
+	TSubclassOf<UBlackboardComponent> BlackboardComponentClass = SpecificBlackboardComponentClass;
+	if (!IsValid(BlackboardComponentClass))
 	{
-		BlackboardComponents.Reserve(1);
-		BlackboardComponents.Add(CachedBlackboard.BlackboardComponent);
+		// If no specific one provided, the BlackboardComponentClass to use from the FlowAsset
+		UAIFlowAsset* AIFlowAsset = Cast<UAIFlowAsset>(GetFlowAsset());
+		if (IsValid(AIFlowAsset))
+		{
+			BlackboardComponentClass = AIFlowAsset->GetBlackboardComponentClass();
+		}
+		else
+		{
+			BlackboardComponentClass = UBlackboardComponent::StaticClass();
+		}
 	}
+
+	// Find (or Inject) the desired blackboard components
+	const TArray<AActor*> ResolvedActors = TryResolveActorsForBlackboard();
+	TArray<UBlackboardComponent*> BlackboardComponents =
+		FAIFlowActorBlackboardHelper::FindOrAddBlackboardComponentOnActors(
+			ResolvedActors,
+			InjectComponentsManager,
+			BlackboardComponentClass,
+			SpecificBlackboardAsset,
+			SpecificBlackboardSearchRule,
+			InjectRule);
 
 	return BlackboardComponents;
 }
 
-bool UFlowNode_SetBlackboardValues::TryFindPropertyByRemappedPinName(const FName& RemappedPinName, const FProperty*& OutFoundProperty, TInstancedStruct<FFlowDataPinProperty>& OutFoundInstancedStruct, EFlowDataPinResolveResult& InOutResult) const
+bool UFlowNode_SetBlackboardValues::TryFindPropertyByPinName(
+	const UObject& PropertyOwnerObject,
+	const FName& PinName,
+	const FProperty*& OutFoundProperty,
+	TInstancedStruct<FFlowDataPinValue>& OutFoundInstancedStruct) const
 {
 	// The SetBlackboardValues node stores its properties in instanced structs in an array, so look there first
 
@@ -87,11 +181,11 @@ bool UFlowNode_SetBlackboardValues::TryFindPropertyByRemappedPinName(const FName
 			continue;
 		}
 
-		if (BlackboardEntry->Key.KeyName == RemappedPinName)
+		if (BlackboardEntry->Key.KeyName == PinName)
 		{
 			const IFlowDataPinPropertyProviderInterface* FlowDataPinProviderInterface = CastChecked<IFlowDataPinPropertyProviderInterface>(BlackboardEntry);
 
-			if (FlowDataPinProviderInterface->TryProvideFlowDataPinProperty(bAreEntriesForEveryActorInputPins, OutFoundInstancedStruct))
+			if (FlowDataPinProviderInterface->TryProvideFlowDataPinProperty(OutFoundInstancedStruct))
 			{
 				return true;
 			}
@@ -103,7 +197,7 @@ bool UFlowNode_SetBlackboardValues::TryFindPropertyByRemappedPinName(const FName
 		}
 	}
 
-	return Super::TryFindPropertyByPinName(RemappedPinName, OutFoundProperty, OutFoundInstancedStruct, InOutResult);
+	return Super::TryFindPropertyByPinName(PropertyOwnerObject, PinName, OutFoundProperty, OutFoundInstancedStruct);
 }
 
 #if WITH_EDITOR
@@ -156,8 +250,10 @@ UBlackboardData* UFlowNode_SetBlackboardValues::GetBlackboardAssetForPropertyHan
 	return Super::GetBlackboardAssetForPropertyHandle(PropertyHandle);
 }
 
-void UFlowNode_SetBlackboardValues::AutoGenerateDataPins(TMap<FName, FName>& InOutPinNameToBoundPropertyNameMap, TArray<FFlowPin>& InOutInputDataPins, TArray<FFlowPin>& InOutOutputDataPins) const
+void UFlowNode_SetBlackboardValues::AutoGenerateDataPins(FFlowAutoDataPinsWorkingData& InOutWorkingData) const
 {
+	Super::AutoGenerateDataPins(InOutWorkingData);
+
 	for (const UFlowBlackboardEntryValue* BlackboardEntry : EntriesForEveryActor.Entries)
 	{
 		if (!IsValid(BlackboardEntry))
@@ -174,21 +270,21 @@ void UFlowNode_SetBlackboardValues::AutoGenerateDataPins(TMap<FName, FName>& InO
 		}
 
 		const IFlowDataPinPropertyProviderInterface* FlowDataPinProviderInterface = CastChecked<IFlowDataPinPropertyProviderInterface>(BlackboardEntry);
-		TInstancedStruct<FFlowDataPinProperty> InstancedFlowDataPinProperty;
+		TInstancedStruct<FFlowDataPinValue> InstancedFlowDataPinProperty;
 
-		if (FlowDataPinProviderInterface->TryProvideFlowDataPinProperty(bAreEntriesForEveryActorInputPins, InstancedFlowDataPinProperty))
+		if (FlowDataPinProviderInterface->TryProvideFlowDataPinProperty(InstancedFlowDataPinProperty))
 		{
-			InOutPinNameToBoundPropertyNameMap.Add(PinName, PinName);
-
-			FFlowPin NewFlowPin = FFlowDataPinProperty::CreateFlowPin(PinName, InstancedFlowDataPinProperty);
-
-			if (bAreEntriesForEveryActorInputPins)
+			const FFlowDataPinValue& FlowDataPinValuePtr = InstancedFlowDataPinProperty.Get<FFlowDataPinValue>();
+			if (const FFlowPinType* FlowPinType = FFlowPinType::LookupPinType(FlowDataPinValuePtr.GetPinTypeName()))
 			{
-				InOutInputDataPins.AddUnique(NewFlowPin);
+				FFlowPin NewFlowPin = FlowPinType->CreateFlowPinFromValueWrapper(PinName, FlowDataPinValuePtr);
+
+				// The FFlowDataPinProperty's for this node are all Input pins
+				InOutWorkingData.AutoInputDataPinsNext.AddUnique(NewFlowPin);
 			}
 			else
 			{
-				InOutOutputDataPins.AddUnique(NewFlowPin);
+				LogError(FString::Printf(TEXT("Could not auto-generate pin %s: Could not find pin type %s."), *PinName.ToString(), *FlowDataPinValuePtr.GetPinTypeName().ToString()), EFlowOnScreenMessageType::Temporary);
 			}
 		}
 	}
@@ -213,8 +309,6 @@ void UFlowNode_SetBlackboardValues::UpdateNodeConfigText_Implementation()
 	FTextBuilder TextBuilder;
 
 	AppendEntriesForEveryActor(TextBuilder);
-
-	FAIFlowActorBlackboardHelper::AppendBlackboardOptions(PerActorOptions, TextBuilder);
 
 	SetNodeConfigText(TextBuilder.ToText());
 #endif // WITH_EDITOR

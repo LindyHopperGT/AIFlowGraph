@@ -211,7 +211,7 @@ UBlackboardData* UFlowNodeAddOn_PredicateCompareBlackboardValue::GetBlackboardAs
 	return Super::GetBlackboardAssetForPropertyHandle(PropertyHandle);
 }
 
-FText UFlowNodeAddOn_PredicateCompareBlackboardValue::GetNodeTitle() const
+FText UFlowNodeAddOn_PredicateCompareBlackboardValue::K2_GetNodeTitle_Implementation() const
 {
 	if (!KeyLeft.GetKeyName().IsNone() && UFlowSettings::Get()->bUseAdaptiveNodeTitles)
 	{
@@ -226,7 +226,7 @@ FText UFlowNodeAddOn_PredicateCompareBlackboardValue::GetNodeTitle() const
 		return FText::Format(LOCTEXT("CustomCompareBlackboardValueTitle", "{0} {1} {2}"), { LHS, Operator, RHS });
 	}
 
-	return Super::GetNodeTitle();
+	return Super::K2_GetNodeTitle_Implementation();
 }
 
 #endif // WITH_EDITOR

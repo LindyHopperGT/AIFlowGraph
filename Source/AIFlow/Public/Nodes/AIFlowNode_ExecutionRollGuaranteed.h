@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Nodes/FlowNode.h"
+#include "AIFlowNode.h"
 #include "AIFlowNode_ExecutionRollGuaranteed.generated.h"
 
 /**
@@ -11,7 +11,7 @@
  * MaximumAttempts(4) - odds for success would be 25%, 50%, 75%, 100% on each subsequent roll
  */
 UCLASS(NotBlueprintable, meta = (DisplayName = "Roll Guaranteed", Keywords = "random"))
-class AIFLOW_API UAIFlowNode_ExecutionRollGuaranteed final : public UFlowNode
+class AIFLOW_API UAIFlowNode_ExecutionRollGuaranteed final : public UAIFlowNode
 {
 	GENERATED_UCLASS_BODY()
 
@@ -26,7 +26,10 @@ class AIFLOW_API UAIFlowNode_ExecutionRollGuaranteed final : public UFlowNode
 private:
 	UPROPERTY(SaveGame)
 	int32 RollAttempts = 0;
-		
+
+	UPROPERTY(Transient)
+	FRandomStream RandomStream;
+
 	UPROPERTY(SaveGame)
 	bool bHasSuccessfullyRolled = false;
 
@@ -35,7 +38,7 @@ public:
 	virtual bool CanUserAddOutput() const override { return false; }
 #endif
 
-protected:
+	virtual void OnActivate() override;
 	virtual void ExecuteInput(const FName& PinName) override;
 	virtual void Cleanup() override;
 

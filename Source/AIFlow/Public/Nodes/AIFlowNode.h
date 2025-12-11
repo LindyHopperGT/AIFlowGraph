@@ -30,6 +30,10 @@ public:
 	virtual UBlackboardData* GetBlackboardAsset() const override;
 	// --
 
+	// UFlowNode
+	virtual int32 GetRandomSeed() const override;
+	// --
+
 #if WITH_EDITOR
 	// IFlowBlackboardAssetProvider
 	virtual UBlackboardData* GetBlackboardAssetForPropertyHandle(const TSharedPtr<IPropertyHandle>& PropertyHandle) const override;

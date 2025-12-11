@@ -55,6 +55,14 @@ int32 UAIFlowNode_ExecutionRollWeighted::GetWeightedRandomChoice()
 	return FinalIndex;	
 }
 
+void UAIFlowNode_ExecutionRollWeighted::OnActivate()
+{
+	Super::OnActivate();
+
+	const int32 RandomSeed = GetRandomSeed();
+	RandomStream.Initialize(RandomSeed);
+}
+
 void UAIFlowNode_ExecutionRollWeighted::ExecuteInput(const FName& PinName)
 {
 	const int32 ChosenOptionIndex = GetWeightedRandomChoice();
@@ -78,16 +86,20 @@ void UAIFlowNode_ExecutionRollWeighted::CalculateTotalWeight()
 }
 
 #if WITH_EDITOR
-void UAIFlowNode_ExecutionRollWeighted::UpdateOutputPins()
+
+TArray<FFlowPin> UAIFlowNode_ExecutionRollWeighted::GetContextOutputs() const
 {
-	OutputPins.Empty();
-	for(const FAIFlowNode_RollWeightedOption Output : OutputPinOptions)
+	TArray<FFlowPin> ContextPins;
+
+	for (const FAIFlowNode_RollWeightedOption Output : OutputPinOptions)
 	{
-		if(Output.OutputName != NAME_None)
+		if (Output.OutputName != NAME_None)
 		{
-			OutputPins.Add(FFlowPin(Output.OutputName.ToString()));
+			ContextPins.Add(FFlowPin(Output.OutputName.ToString()));
 		}
 	}
+
+	return ContextPins;
 }
 
 void UAIFlowNode_ExecutionRollWeighted::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
@@ -98,8 +110,8 @@ void UAIFlowNode_ExecutionRollWeighted::PostEditChangeProperty(struct FPropertyC
 
 	if (MemberPropertyName == GET_MEMBER_NAME_CHECKED(UAIFlowNode_ExecutionRollWeighted, OutputPinOptions))
 	{
-		UpdateOutputPins();
 		OnReconstructionRequested.ExecuteIfBound();
 	}
 }
+
 #endif

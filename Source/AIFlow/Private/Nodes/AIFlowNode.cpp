@@ -1,7 +1,7 @@
 // Copyright https://github.com/MothCocoon/FlowGraph/graphs/contributors
 
 #include "Nodes/AIFlowNode.h"
-#include "FlowAsset.h"
+#include "AIFlowAsset.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(AIFlowNode)
 
@@ -13,6 +13,18 @@ UBlackboardData* UAIFlowNode::GetBlackboardAsset() const
 	}
 
 	return nullptr;
+}
+
+int32 UAIFlowNode::GetRandomSeed() const
+{
+	const int32 SuperRandomSeed = Super::GetRandomSeed();
+
+	if (const UAIFlowAsset* AIFlowAsset = Cast<UAIFlowAsset>(GetFlowAsset()))
+	{
+		return HashCombine(AIFlowAsset->GetRandomSeed(), SuperRandomSeed);
+	}
+
+	return SuperRandomSeed;
 }
 
 #if WITH_EDITOR
