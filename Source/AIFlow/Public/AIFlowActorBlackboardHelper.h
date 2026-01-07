@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Templates/SubclassOf.h"
+#include "Types/FlowDataPinValue.h"
 #include "Types/FlowEnumUtils.h"
 #include "StructUtils/InstancedStruct.h"
 #include "Types/FlowPinEnums.h"
@@ -18,7 +19,6 @@ class UFlowBlackboardEntryValue;
 class UFlowNodeBase;
 class UFlowInjectComponentsManager;
 struct FFlowBlackboardEntry;
-struct FFlowDataPinValue;
 class UBlackboardKeyType;
 
 // Rule enum for injecting missing blackboards on Actors

@@ -245,8 +245,27 @@ FFlowDataPinResult UFlowNode_GetBlackboardValues::TrySupplyDataPin_Implementatio
 
 	if (UBlackboardComponent* BlackboardComponent = GetBlackboardComponentToApplyTo())
 	{
-		const UBlackboardKeyType* BlackboardKeyType = BlackboardComponent->GetBlackboardKeyType(PinName);
-		
+		auto GetBlackboardKeyType = [](const UBlackboardComponent& BlackboardComponent, const FName& KeyName) -> UBlackboardKeyType*
+		{
+			UBlackboardData* BlackboardAsset = BlackboardComponent.GetBlackboardAsset();
+			if (IsValid(BlackboardAsset))
+			{
+				const FBlackboard::FKey KeyID = BlackboardAsset->GetKeyID(KeyName);
+				if (KeyID != FBlackboard::InvalidKey)
+				{
+					const FBlackboardEntry* BlackboardEntry = BlackboardAsset->GetKey(KeyID);
+					return BlackboardEntry->KeyType;
+				}
+			}
+			return nullptr;
+		};
+
+		const UBlackboardKeyType* BlackboardKeyType = GetBlackboardKeyType(*BlackboardComponent, PinName);
+		if (BlackboardKeyType == nullptr)
+		{
+			LogWarning(FString::Printf(TEXT("Asked for BlackboardEntry for key (%s), which could not be found in the blackboard %s."), *PinName.ToString(), *BlackboardComponent->GetName()));
+		}
+
 		FFlowDataPinResult SuppliedResult;
 
 		SuppliedResult.Result =

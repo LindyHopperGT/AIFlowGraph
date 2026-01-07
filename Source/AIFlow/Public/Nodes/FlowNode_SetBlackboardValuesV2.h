@@ -7,7 +7,6 @@
 #include "Types/FlowBlackboardEntry.h"
 #include "Types/FlowInjectComponentsManager.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "BehaviorTree/Blackboard/BlackboardKeyWrappers.h"
 
 #include "FlowNode_SetBlackboardValuesV2.generated.h"
 
