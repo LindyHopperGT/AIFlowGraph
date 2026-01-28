@@ -4,6 +4,8 @@
 
 #include "DetailCustomizations/FlowBlackboardEntryCustomization.h"
 #include "DetailCustomizations/ConfigurableEnumPropertyCustomization.h"
+#include "DetailCustomizations/AIFlowBlackboardWatchDataCustomization.h"
+#include "Blackboard/AIFlowBlackboardWatchData.h"
 #include "AIFlowTags.h"
 #include "Graph/FlowGraphSettings.h"
 
@@ -34,18 +36,23 @@ void FAIFlowEditorModule::ShutdownModule()
 
 void FAIFlowEditorModule::TrySetFlowNodeDisplayStyleDefaults() const
 {
-	// Force the flow module to be loaded before we try to access the Settings
+	// Ensure the Flow module is loaded before accessing Flow graph settings.
 	FModuleManager::LoadModuleChecked<FFlowModule>("Flow");
 
-	UFlowGraphSettings& Settings = *UFlowGraphSettings::Get();
-	(void) Settings.TryAddDefaultNodeDisplayStyle(FFlowNodeDisplayStyleConfig(FlowNodeStyle::Blackboard, FLinearColor(-0.7f, 0.58f, 1.0f, 1.0f)));
+	if (UFlowGraphSettings* Settings = UFlowGraphSettings::Get())
+	{
+		Settings->TryAddDefaultNodeDisplayStyle(
+			FFlowNodeDisplayStyleConfig(
+				FlowNodeStyle::Blackboard,
+				FLinearColor(-0.7f, 0.58f, 1.0f, 1.0f)));
+	}
 }
 
 void FAIFlowEditorModule::RegisterAssets()
 {
 	IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
 
-	// try to merge asset category with a built-in one
+	// Try to merge the AI Flow asset category with an existing Flow asset category if possible.
 	{
 		const FText AssetCategoryText = UFlowGraphSettings::Get()->FlowAssetCategoryName;
 
@@ -64,6 +71,7 @@ void FAIFlowEditorModule::RegisterAssets()
 			}
 		}
 
+		// Fallback: register our own category if no suitable one exists.
 		if (FlowAssetCategory == EAssetTypeCategories::None)
 		{
 			FlowAssetCategory = AssetTools.RegisterAdvancedAssetCategory(FName(TEXT("Flow")), AssetCategoryText);
@@ -115,6 +123,7 @@ void FAIFlowEditorModule::RegisterDetailCustomizations()
 
 		RegisterCustomStructLayout(*FConfigurableEnumProperty::StaticStruct(), FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FConfigurableEnumPropertyCustomization::MakeInstance));
 		RegisterCustomStructLayout(*FFlowBlackboardEntry::StaticStruct(), FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FFlowBlackboardEntryCustomization::MakeInstance));
+		RegisterCustomClassLayout(UAIFlowBlackboardWatchData::StaticClass(), FOnGetDetailCustomizationInstance::CreateStatic(&FAIFlowBlackboardWatchDataCustomization::MakeInstance));
 
 		PropertyModule.NotifyCustomizationModuleChanged();
 	}

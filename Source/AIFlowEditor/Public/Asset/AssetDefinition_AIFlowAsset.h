@@ -16,4 +16,5 @@ class AIFLOWEDITOR_API UAssetDefinition_AIFlowAsset : public UAssetDefinition_Fl
 public:
 	virtual FText GetAssetDisplayName() const override;
 	virtual TSoftClassPtr<UObject> GetAssetClass() const override;
+	virtual EAssetCommandResult OpenAssets(const FAssetOpenArgs& OpenArgs) const override;
 };
