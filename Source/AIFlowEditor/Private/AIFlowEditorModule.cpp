@@ -39,7 +39,7 @@ void FAIFlowEditorModule::TrySetFlowNodeDisplayStyleDefaults() const
 	// Ensure the Flow module is loaded before accessing Flow graph settings.
 	FModuleManager::LoadModuleChecked<FFlowModule>("Flow");
 
-	if (UFlowGraphSettings* Settings = UFlowGraphSettings::Get())
+	if (UFlowGraphSettings* Settings = GetMutableDefault<UFlowGraphSettings>())
 	{
 		Settings->TryAddDefaultNodeDisplayStyle(
 			FFlowNodeDisplayStyleConfig(
@@ -54,7 +54,7 @@ void FAIFlowEditorModule::RegisterAssets()
 
 	// Try to merge the AI Flow asset category with an existing Flow asset category if possible.
 	{
-		const FText AssetCategoryText = UFlowGraphSettings::Get()->FlowAssetCategoryName;
+		const FText AssetCategoryText = GetDefault<UFlowGraphSettings>()->FlowAssetCategoryName;
 
 		// Find matching built-in category
 		if (!AssetCategoryText.IsEmpty())

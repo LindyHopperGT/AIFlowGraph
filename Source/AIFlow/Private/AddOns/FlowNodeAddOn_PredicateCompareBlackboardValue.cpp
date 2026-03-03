@@ -213,7 +213,7 @@ UBlackboardData* UFlowNodeAddOn_PredicateCompareBlackboardValue::GetBlackboardAs
 
 FText UFlowNodeAddOn_PredicateCompareBlackboardValue::K2_GetNodeTitle_Implementation() const
 {
-	if (!KeyLeft.GetKeyName().IsNone() && UFlowSettings::Get()->bUseAdaptiveNodeTitles)
+	if (!KeyLeft.GetKeyName().IsNone() && GetDefault<UFlowSettings>()->bUseAdaptiveNodeTitles)
 	{
 		const FText LHS = FText::FromName(KeyLeft.GetKeyName());
 		const FText Operator = FText::FromString(GetOperatorSymbolString(OperatorType));
