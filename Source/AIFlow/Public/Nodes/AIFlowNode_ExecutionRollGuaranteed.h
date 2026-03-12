@@ -13,7 +13,7 @@
 UCLASS(NotBlueprintable, meta = (DisplayName = "Roll Guaranteed", Keywords = "random"))
 class AIFLOW_API UAIFlowNode_ExecutionRollGuaranteed final : public UAIFlowNode
 {
-	GENERATED_UCLASS_BODY()
+	GENERATED_BODY()
 
 	// Initial odds of our "guaranteed output" rout. ( 1 / MaximumAttempts )
 	UPROPERTY(EditAnywhere, Category = "RollGuaranteed", meta = (ClampMin = 2, UIMin = 2))
@@ -34,6 +34,8 @@ private:
 	bool bHasSuccessfullyRolled = false;
 
 public:
+	UAIFlowNode_ExecutionRollGuaranteed();
+
 #if WITH_EDITOR
 	virtual bool CanUserAddOutput() const override { return false; }
 #endif

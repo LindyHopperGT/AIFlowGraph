@@ -10,8 +10,7 @@ FAIFlowNode_RollWeightedOption::FAIFlowNode_RollWeightedOption(const FName InOut
 {
 }
 
-UAIFlowNode_ExecutionRollWeighted::UAIFlowNode_ExecutionRollWeighted(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+UAIFlowNode_ExecutionRollWeighted::UAIFlowNode_ExecutionRollWeighted()
 {
 #if WITH_EDITOR
 	NodeDisplayStyle = FlowNodeStyle::Default;

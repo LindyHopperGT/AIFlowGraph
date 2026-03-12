@@ -9,8 +9,7 @@ const FName UAIFlowNode_ExecutionRollGuaranteed::INPIN_Reset(TEXT("Reset"));
 const FName UAIFlowNode_ExecutionRollGuaranteed::OUTPIN_GuaranteedOut(TEXT("Guaranteed Out"));
 const FName UAIFlowNode_ExecutionRollGuaranteed::OUTPIN_FailureOut(TEXT("Failure Out"));
 
-UAIFlowNode_ExecutionRollGuaranteed::UAIFlowNode_ExecutionRollGuaranteed(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+UAIFlowNode_ExecutionRollGuaranteed::UAIFlowNode_ExecutionRollGuaranteed()
 {
 #if WITH_EDITOR
 	NodeDisplayStyle = FlowNodeStyle::Default;
@@ -24,7 +23,7 @@ UAIFlowNode_ExecutionRollGuaranteed::UAIFlowNode_ExecutionRollGuaranteed(const F
 	InputPins.Add(FFlowPin(INPIN_Reset.ToString(), ResetPinTooltip));
 	
 	FString GuaranteedPinTooltip = TEXT("Roll for a chance to enter this rout sequentially increasing our chances.");
-	FString FailurePinTooltip = TEXT("On failure we take this rout");
+	FString FailurePinTooltip = TEXT("On failure we take this route");
 	OutputPins.Empty();
 	OutputPins.Add(FFlowPin(OUTPIN_GuaranteedOut.ToString(), GuaranteedPinTooltip));
 	OutputPins.Add(FFlowPin(OUTPIN_FailureOut.ToString(), FailurePinTooltip));

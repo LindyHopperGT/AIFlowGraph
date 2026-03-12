@@ -30,7 +30,7 @@ public:
 UCLASS(NotBlueprintable, meta = (DisplayName = "Roll Weighted", Keywords = "random"))
 class AIFLOW_API UAIFlowNode_ExecutionRollWeighted final : public UAIFlowNode
 {
-	GENERATED_UCLASS_BODY()
+	GENERATED_BODY()
 
 public:
 	UPROPERTY(EditAnywhere, Category = "RollWeighted", meta = (TitleProperty = "{OutputName} {Weight}"))
@@ -44,6 +44,8 @@ public:
 	int32 TotalWeight = 0;
 
 public:
+	UAIFlowNode_ExecutionRollWeighted();
+
 	virtual void OnActivate() override;
 	virtual void ExecuteInput(const FName& PinName) override;
 
