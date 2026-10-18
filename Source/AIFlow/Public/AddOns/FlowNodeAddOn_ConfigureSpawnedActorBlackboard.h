@@ -48,7 +48,7 @@ protected:
 
 	// Specify an explicit blackboard asset to write to
 	UPROPERTY(EditAnywhere, Category = Configuration, DisplayName = "Expected Blackboard Asset for Actors", meta = (DisplayPriority = 1))
-	UBlackboardData* ExpectedBlackboardData = nullptr;
+	TObjectPtr<UBlackboardData> ExpectedBlackboardData = nullptr;
 
 	// Blackboard properties to set on every spawned actor
 	UPROPERTY(EditAnywhere, Category = Configuration, meta = (DisplayPriority = 3))

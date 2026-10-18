@@ -107,7 +107,7 @@ public:
 
 	// Entries to set on the blackboard
 	UPROPERTY(EditAnywhere, Instanced, Category = BlackboardEntriesToSet, DisplayName = "Blackboard Entries")
-	TArray<UFlowBlackboardEntryValue*> Entries;
+	TArray<TObjectPtr<UFlowBlackboardEntryValue>> Entries;
 };
 
 // Helper struct to handle the shared functionality of setting blackboard values for actors.

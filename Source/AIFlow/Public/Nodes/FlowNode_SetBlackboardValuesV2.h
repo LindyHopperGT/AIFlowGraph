@@ -105,7 +105,7 @@ protected:
 
 	// Optional specific actors to use to look for (or inject) the blackboard.
 	UPROPERTY(Transient, meta = (DefaultForInputFlowPin, FlowPinType = "Object", DisplayPriority = 1))
-	TArray<AActor*> SpecificActors;
+	TArray<TObjectPtr<AActor>> SpecificActors;
 
 	// Specific blackboard to use (optional, defaults to the flow asset's blackboard)
 	UPROPERTY(EditAnywhere, Category = BlackboardAsset, DisplayName = "Specific Blackboard", meta = (DisplayPriority = 2))

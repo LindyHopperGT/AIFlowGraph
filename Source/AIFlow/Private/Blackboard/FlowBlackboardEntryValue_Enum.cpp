@@ -304,6 +304,8 @@ bool UFlowBlackboardEntryValue_Enum::TryGetNumericalValuesForArithmeticOperation
 
 bool UFlowBlackboardEntryValue_Enum::TrySetValueFromInputDataPin(const FName& PinName, UFlowNode& PinOwnerFlowNode)
 {
-	const EFlowDataPinResolveResult ResolveResult = PinOwnerFlowNode.TryResolveDataPinValue<FFlowPinType_Enum>(PinName, EnumValue.Value, EnumValue.EnumClass);
+	UEnum* ResolvedEnumClass = EnumValue.EnumClass;
+	const EFlowDataPinResolveResult ResolveResult = PinOwnerFlowNode.TryResolveDataPinValue<FFlowPinType_Enum>(PinName, EnumValue.Value, ResolvedEnumClass);
+	EnumValue.EnumClass = ResolvedEnumClass;
 	return FlowPinType::IsSuccess(ResolveResult);
 }
